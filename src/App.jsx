@@ -578,10 +578,7 @@ const EliteBanking = () => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        position: 'sticky',
-        top: 0,
         backgroundColor: theme.bg,
-        zIndex: 100,
         borderBottom: `1px solid ${theme.cardBg}`
       }}>
         <h1 style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>
