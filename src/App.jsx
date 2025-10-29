@@ -1216,5 +1216,8 @@ const buttonStyle = (theme) => ({
   background: theme.accent, color: theme.bg === '#FFFFFF' ? theme.bg : theme.text,
   fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '10px'
 });
-
+</div>
+    </>
+  );
+};
 export default EliteBanking;
