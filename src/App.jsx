@@ -95,6 +95,11 @@ const EliteBanking = () => {
     }
   }, [currentTheme, theme.bg]);
 
+useEffect(() => {
+    document.body.style.backgroundColor = theme.bg;
+    document.documentElement.style.backgroundColor = theme.bg;
+  }, [theme.bg]);
+  
   const generateCardNumber = () => {
     const segments = [];
     for (let i = 0; i < 4; i++) {
