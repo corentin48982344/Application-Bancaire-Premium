@@ -740,8 +740,7 @@ const EliteBanking = () => {
         position: 'fixed', bottom: 0, left: 0, right: 0, background: theme.cardBg,
         borderTop: `1px solid ${currentTheme === 'light' ? '#E0E0E0' : '#2A2A2A'}`,
         display: 'flex', justifyContent: 'space-around', padding: '12px 0',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom))', zIndex: 100
-    }}>
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))', zIndex: 100 }}>
         <TabBtn icon={<Home size={24} />} label="Accueil" active={activeTab === 'home'} onClick={() => setActiveTab('home')} theme={theme} />
         <TabBtn icon={<CreditCard size={24} />} label="Cartes" active={activeTab === 'cards'} onClick={() => setActiveTab('cards')} theme={theme} />
         <TabBtn icon={<Activity size={24} />} label="Activité" active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} theme={theme} />
