@@ -88,6 +88,13 @@ const EliteBanking = () => {
     if (!loading && accounts.length > 0) saveData();
   }, [accounts, cards, transactions, currentTheme, loading]);
 
+  useEffect(() => {
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.setAttribute('content', theme.bg);
+    }
+  }, [currentTheme, theme.bg]);
+
   const generateCardNumber = () => {
     const segments = [];
     for (let i = 0; i < 4; i++) {
@@ -562,10 +569,12 @@ const EliteBanking = () => {
       minHeight: '100vh',
       color: theme.text,
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-      paddingBottom: '80px'
+      paddingBottom: '80px',
+      paddingTop: 'env(safe-area-inset-top)'
     }}>
       <div style={{ 
         padding: '20px',
+        paddingTop: 'max(20px, env(safe-area-inset-top))',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -717,8 +726,8 @@ const EliteBanking = () => {
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, background: theme.cardBg,
         borderTop: `1px solid ${currentTheme === 'light' ? '#E0E0E0' : '#2A2A2A'}`,
-        display: 'flex', justifyContent: 'space-around', padding: '12px 0', zIndex: 100
-      }}>
+        display: 'flex', justifyContent: 'space-around', padding: '12px 0',
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))', zIndex: 100      }}>
         <TabBtn icon={<Home size={24} />} label="Accueil" active={activeTab === 'home'} onClick={() => setActiveTab('home')} theme={theme} />
         <TabBtn icon={<CreditCard size={24} />} label="Cartes" active={activeTab === 'cards'} onClick={() => setActiveTab('cards')} theme={theme} />
         <TabBtn icon={<Activity size={24} />} label="Activité" active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} theme={theme} />
