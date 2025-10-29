@@ -570,7 +570,6 @@ const EliteBanking = () => {
       color: theme.text,
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       paddingBottom: '80px',
-      paddingTop: 'env(safe-area-inset-top)'
     }}>
       <div style={{ 
         padding: '20px',
