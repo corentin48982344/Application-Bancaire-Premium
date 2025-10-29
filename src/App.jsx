@@ -564,14 +564,27 @@ const EliteBanking = () => {
   };
 
   return (
-    <div style={{ 
-      backgroundColor: theme.bg, 
-      minHeight: '100vh',
-      color: theme.text,
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-      paddingBottom: '80px',
-      paddingTop: 'env(safe-area-inset-top)'
-    }}>
+    <>
+      {/* Fausse barre de statut iOS */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '44px',
+        backgroundColor: theme.bg,
+        zIndex: 9999,
+        borderBottom: `1px solid ${theme.bg}`
+      }} />
+      
+      <div style={{ 
+        backgroundColor: theme.bg, 
+        minHeight: '100vh',
+        color: theme.text,
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        paddingBottom: '80px',
+        paddingTop: '44px'
+      }}>
       <div style={{ 
         padding: '20px',
         paddingTop: 'max(20px, env(safe-area-inset-top))',
