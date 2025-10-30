@@ -331,10 +331,12 @@ useEffect(() => {
 
 <div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
   style={{
-    width: 'calc(100% - 50px)',
+    width: '100%',
     height: '200px',
     perspective: '1200px',
     cursor: 'pointer',
+    padding: '0 20px',
+    boxSizing: 'border-box',
   }}>
             <div style={{
               position: 'relative',
