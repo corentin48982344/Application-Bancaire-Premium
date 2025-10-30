@@ -416,7 +416,7 @@ useEffect(() => {
 
               <div style={{
                 position: 'absolute',
-                width: 'calc(100% - 90px)',
+                width: 'calc(100% - 40px)',
                 left: '20px',
                 height: '100%',
                 backfaceVisibility: 'hidden',
