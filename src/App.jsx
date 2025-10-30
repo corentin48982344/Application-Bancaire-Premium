@@ -464,7 +464,6 @@ useEffect(() => {
               </div>
             </div>
           </div>
-</div>
         </div> {/* Fin wrapper carte */}
           {cards.length > 1 && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'center' }}>
