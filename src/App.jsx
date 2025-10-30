@@ -305,7 +305,8 @@ useEffect(() => {
 
     return (
       <div>
-<div style={{ position: 'relative', marginBottom: '30px', minHeight: '240px', padding: '0 20px' }}>          {cards.length > 1 && (
+<div style={{ position: 'relative', marginBottom: '30px', minHeight: '240px' }}>
+          {cards.length > 1 && (
             <>
               <button onClick={() => setCurrentCardIndex((currentCardIndex - 1 + cards.length) % cards.length)}
                 style={{
