@@ -33,6 +33,119 @@ const cardNetworks = {
   amex: { name: 'American Express', logo: '💳', color: '#006FCF' }
 };
 
+// Bibliothèque de logos organisée par catégories
+const logoLibrary = {
+  restaurants: {
+    name: 'Restaurants & Alimentation',
+    emojis: ['🍔', '🍕', '🍜', '🍱', '☕', '🍷', '🍰', '🥗', '🍣', '🌮', '🍝', '🥘', '🍺', '🥤', '🍩']
+  },
+  shopping: {
+    name: 'Shopping & Mode',
+    emojis: ['🛒', '👕', '👟', '💄', '📱', '🎁', '💍', '👜', '🕶️', '⌚', '🎀', '🧥', '👗', '🛍️', '📦']
+  },
+  services: {
+    name: 'Services & Utilities',
+    emojis: ['⚡', '💡', '🔧', '🏥', '✂️', '📞', '💻', '🔌', '🚰', '📡', '🧰', '🩺', '💉', '🔬', '⚙️']
+  },
+  loisirs: {
+    name: 'Loisirs & Divertissement',
+    emojis: ['🎮', '🎬', '🎵', '⚽', '🎨', '📚', '🎪', '🎭', '🎤', '🎸', '🎲', '🎯', '🎳', '🏀', '🎾']
+  },
+  logement: {
+    name: 'Logement & Maison',
+    emojis: ['🏠', '🔑', '🛋️', '🚿', '🔥', '💰', '🏡', '🪑', '🛏️', '🚪', '🪟', '🧹', '🧺', '🗑️', '📺']
+  },
+  transport: {
+    name: 'Transport & Véhicules',
+    emojis: ['🚗', '⛽', '🚌', '✈️', '🚇', '🚲', '🚕', '🚙', '🏍️', '🚂', '🚤', '🚁', '🛴', '🚠', '🚢']
+  },
+  finance: {
+    name: 'Finance & Banque',
+    emojis: ['💰', '💳', '💵', '💸', '🏦', '💎', '📊', '📈', '💹', '🪙', '💴', '💶', '💷', '🤑', '💲']
+  },
+  autres: {
+    name: 'Autres',
+    emojis: ['✨', '🔄', '⭐', '🎯', '✅', '❤️', '🎉', '🌟', '💫', '🔔', '⚠️', '📌', '🔗', '📍', '🎈']
+  }
+};
+
+// Composant sélecteur de logo
+const LogoSelector = ({ value, onChange, theme }) => {
+  const [selectedCategory, setSelectedCategory] = useState('restaurants');
+  
+  return (
+    <div style={{ marginBottom: '15px' }}>
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+        Logo sélectionné : {value || '💰'}
+      </label>
+      
+      {/* Catégories */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        overflowX: 'auto', 
+        marginBottom: '12px',
+        paddingBottom: '8px'
+      }}>
+        {Object.entries(logoLibrary).map(([key, cat]) => (
+          <button
+            key={key}
+            onClick={() => setSelectedCategory(key)}
+            style={{
+              padding: '8px 12px',
+              background: selectedCategory === key ? theme.accent + '33' : theme.cardBg,
+              border: selectedCategory === key ? `2px solid ${theme.accent}` : `1px solid ${theme.cardBg}`,
+              borderRadius: '8px',
+              color: theme.text,
+              fontSize: '12px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              fontWeight: selectedCategory === key ? '600' : '400'
+            }}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Grille d'emojis */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(5, 1fr)',
+        gap: '8px',
+        padding: '12px',
+        background: theme.cardBg,
+        borderRadius: '12px',
+        maxHeight: '200px',
+        overflowY: 'auto'
+      }}>
+        {logoLibrary[selectedCategory].emojis.map(emoji => (
+          <button
+            key={emoji}
+            onClick={() => onChange(emoji)}
+            style={{
+              width: '100%',
+              aspectRatio: '1',
+              padding: '8px',
+              background: value === emoji ? theme.accent + '33' : 'transparent',
+              border: value === emoji ? `2px solid ${theme.accent}` : 'none',
+              borderRadius: '8px',
+              fontSize: '28px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const EliteBanking = () => {
   const [loading, setLoading] = useState(true);
   const [currentTheme, setCurrentTheme] = useState('classic');
@@ -261,7 +374,7 @@ const EliteBanking = () => {
       category: formData.category || 'Autre',
       amount: finalAmount,
       date: new Date().toISOString(),
-      logo: '💰',
+      logo: formData.transactionLogo || '💰',
       type: formData.type || 'debit'
     };
 
@@ -429,7 +542,7 @@ const EliteBanking = () => {
 
     return (
       <div>
-<div style={{ position: 'relative', marginBottom: '30px', minHeight: '240px' }}>
+        <div style={{ position: 'relative', marginBottom: '30px', minHeight: '240px' }}>
           {cards.length > 1 && (
             <>
               <button onClick={() => setCurrentCardIndex((currentCardIndex - 1 + cards.length) % cards.length)}
@@ -453,13 +566,13 @@ const EliteBanking = () => {
             </>
           )}
 
-<div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
-  style={{
-    width: '100%',
-    height: '200px',
-    perspective: '1200px',
-    cursor: 'pointer',
-  }}>
+          <div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
+            style={{
+              width: '100%',
+              height: '200px',
+              perspective: '1200px',
+              cursor: 'pointer',
+            }}>
             <div style={{
               position: 'relative',
               width: '100%',
@@ -702,7 +815,6 @@ const EliteBanking = () => {
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       paddingBottom: '80px',
       paddingTop: 'env(safe-area-inset-top)'
-
     }}>
       <div style={{ 
         padding: '20px',
@@ -990,6 +1102,14 @@ const EliteBanking = () => {
                 <input type="text" placeholder="Catégorie" value={formData.category || ''}
                   onChange={(e) => setFormData({...formData, category: e.target.value})}
                   style={inputStyle(theme)} />
+                
+                {/* Bibliothèque de logos pour transaction manuelle */}
+                <LogoSelector 
+                  value={formData.transactionLogo || '💰'} 
+                  onChange={(logo) => setFormData({...formData, transactionLogo: logo})}
+                  theme={theme}
+                />
+                
                 <button onClick={addTransaction} style={buttonStyle(theme)}>Ajouter</button>
               </div>
             )}
@@ -1005,12 +1125,12 @@ const EliteBanking = () => {
                   onChange={(e) => setFormData({...formData, recurringName: e.target.value})}
                   style={inputStyle(theme)} />
 
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
-                  Logo (emoji)
-                </label>
-                <input type="text" placeholder="🍔 💰 🏠" value={formData.recurringLogo || ''}
-                  onChange={(e) => setFormData({...formData, recurringLogo: e.target.value})}
-                  style={inputStyle(theme)} />
+                {/* Bibliothèque de logos */}
+                <LogoSelector 
+                  value={formData.recurringLogo || '🔄'} 
+                  onChange={(logo) => setFormData({...formData, recurringLogo: logo})}
+                  theme={theme}
+                />
 
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
                   Type
@@ -1378,6 +1498,7 @@ const EliteBanking = () => {
                     <li>Cartes bancaires virtuelles</li>
                     <li>Transactions et virements</li>
                     <li>Transactions automatiques récurrentes</li>
+                    <li>Bibliothèque de logos par catégories</li>
                     <li>Thèmes personnalisables</li>
                     <li>Stockage sécurisé des données</li>
                   </ul>
@@ -1430,9 +1551,8 @@ const TransactionItem = ({ tx, theme }) => (
       alignItems: 'center', justifyContent: 'center', fontSize: '24px'
     }}>{tx.logo}</div>
     <div style={{ flex: 1 }}>
-      <p style={{ margin: 0, fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>
         {tx.name}
-        {tx.isRecurring && <span style={{ fontSize: '12px' }}>🔄</span>}
       </p>
       <p style={{ margin: 0, fontSize: '13px', color: theme.textSecondary, marginTop: '2px' }}>{tx.category}</p>
     </div>
