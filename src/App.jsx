@@ -386,7 +386,7 @@ useEffect(() => {
                     margin: 0, 
                     fontSize: '20px', 
                     fontWeight: '300', 
-                    letterSpacing: '3px',
+                    letterSpacing: '1px',
                     color: theme.text,
                     fontFamily: 'monospace'
                   }}>
