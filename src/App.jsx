@@ -384,7 +384,7 @@ useEffect(() => {
                 <div>
                   <p style={{ 
                     margin: 0, 
-                    fontSize: '22px', 
+                    fontSize: '21px', 
                     fontWeight: '300', 
                     letterSpacing: '1px',
                     color: theme.text,
