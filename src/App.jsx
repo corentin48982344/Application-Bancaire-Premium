@@ -346,8 +346,8 @@ useEffect(() => {
             }}>
               <div style={{
                 position: 'absolute',
-                width: 'calc(90% - 40px)', 
-                left: '50%',
+                width: 'calc(100% - 40px)', 
+                left: '100%',
                 transform: 'translateX(-50%)',
                 height: '100%',
                 backfaceVisibility: 'hidden',
