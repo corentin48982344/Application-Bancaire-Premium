@@ -332,8 +332,8 @@ useEffect(() => {
           <div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
             style={{
               width: '100%',
-              height: '220px',
-              perspective: '1000px',
+              height: '200px',
+              perspective: '12000px',
               cursor: 'pointer'
             }}>
             <div style={{
