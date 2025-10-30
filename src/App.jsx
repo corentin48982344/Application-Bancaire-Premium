@@ -417,8 +417,7 @@ useEffect(() => {
               <div style={{
                 position: 'absolute',
                 width: 'calc(100% - 40px)',
-                left: '50%',
-                transform: 'translateX(-50%) rotateY(180deg)',
+                left: '20px',
                 height: '100%',
                 backfaceVisibility: 'hidden',
                 background: theme.cardBack,
