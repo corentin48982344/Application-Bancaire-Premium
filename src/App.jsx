@@ -331,7 +331,7 @@ useEffect(() => {
 
 <div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
   style={{
-    width: 'calc(100% - 40px)',
+    width: '100%',
     height: '200px',
     perspective: '1200px',
     cursor: 'pointer',
@@ -346,7 +346,8 @@ useEffect(() => {
             }}>
               <div style={{
                 position: 'absolute',
-                width: '100%',
+                width: 'calc(100% - 40px)', 
+                left: '20px',
                 height: '100%',
                 backfaceVisibility: 'hidden',
                 background: currentTheme === 'classic' ? theme.cardFront : theme.cardFront,
@@ -414,7 +415,8 @@ useEffect(() => {
 
               <div style={{
                 position: 'absolute',
-                width: '100%',
+                width: 'calc(100% - 40px)',
+                left: '20px',
                 height: '100%',
                 backfaceVisibility: 'hidden',
                 background: theme.cardBack,
