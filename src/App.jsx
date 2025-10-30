@@ -353,7 +353,7 @@ useEffect(() => {
                 backfaceVisibility: 'hidden',
                 background: currentTheme === 'classic' ? theme.cardFront : theme.cardFront,
                 borderRadius: '16px',
-                padding: '7px',
+                padding: '24px',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
                 border: `1px solid ${theme.accent}33`,
                 display: 'flex',
