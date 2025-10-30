@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, CreditCard, Activity, TrendingUp, ChevronLeft, ChevronRight, Eye, EyeOff, Plus, ArrowUpRight, X, Settings, Palette, Shield, Download, Info, Lock, Unlock, Edit2 } from 'lucide-react';
+import { Home, CreditCard, Activity, TrendingUp, ChevronLeft, ChevronRight, Eye, EyeOff, Plus, ArrowUpRight, X, Settings, Palette, Shield, Download, Info, Lock, Unlock, Edit2, Calendar, Repeat } from 'lucide-react';
 
 const themes = {
   classic: {
@@ -48,6 +48,7 @@ const EliteBanking = () => {
   const [formData, setFormData] = useState({});
   const [flippedCard, setFlippedCard] = useState(null);
   const [revealedInfo, setRevealedInfo] = useState({});
+  const [recurringTransactions, setRecurringTransactions] = useState([]);
 
   const theme = themes[currentTheme];
 
@@ -63,11 +64,13 @@ const EliteBanking = () => {
       const cardsData = await window.storage.get('cards');
       const transactionsData = await window.storage.get('transactions');
       const themeData = await window.storage.get('theme');
+      const recurringData = await window.storage.get('recurringTransactions');
       
       if (accountsData) setAccounts(JSON.parse(accountsData.value));
       if (cardsData) setCards(JSON.parse(cardsData.value));
       if (transactionsData) setTransactions(JSON.parse(transactionsData.value));
       if (themeData) setCurrentTheme(themeData.value);
+      if (recurringData) setRecurringTransactions(JSON.parse(recurringData.value));
     } catch (error) {
       console.log('New user');
     }
@@ -79,6 +82,7 @@ const EliteBanking = () => {
       await window.storage.set('cards', JSON.stringify(cards));
       await window.storage.set('transactions', JSON.stringify(transactions));
       await window.storage.set('theme', currentTheme);
+      await window.storage.set('recurringTransactions', JSON.stringify(recurringTransactions));
     } catch (error) {
       console.error('Save error:', error);
     }
@@ -86,7 +90,7 @@ const EliteBanking = () => {
 
   useEffect(() => {
     if (!loading && accounts.length > 0) saveData();
-  }, [accounts, cards, transactions, currentTheme, loading]);
+  }, [accounts, cards, transactions, recurringTransactions, currentTheme, loading]);
 
   useEffect(() => {
     const metaTheme = document.querySelector('meta[name="theme-color"]');
@@ -95,10 +99,101 @@ const EliteBanking = () => {
     }
   }, [currentTheme, theme.bg]);
 
-useEffect(() => {
+  useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
     document.documentElement.style.backgroundColor = theme.bg;
   }, [theme.bg]);
+
+  // Exécution automatique des transactions récurrentes
+  useEffect(() => {
+    if (loading || recurringTransactions.length === 0) return;
+    
+    const executeRecurringTransactions = () => {
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      let newTransactions = [...transactions];
+      let updatedRecurring = [...recurringTransactions];
+      let updatedAccounts = [...accounts];
+      let hasChanges = false;
+
+      recurringTransactions.forEach((recurring, index) => {
+        const lastExec = recurring.lastExecuted ? new Date(recurring.lastExecuted) : null;
+        const lastExecStr = lastExec ? lastExec.toISOString().split('T')[0] : null;
+        
+        // Si déjà exécuté aujourd'hui, skip
+        if (lastExecStr === todayStr) return;
+        
+        // Calculer si on doit exécuter aujourd'hui
+        let shouldExecute = false;
+        
+        if (recurring.dateType === 'fixed') {
+          // Date fixe dans le mois
+          if (today.getDate() === recurring.dayOfMonth) {
+            shouldExecute = true;
+          }
+        } else {
+          // Date aléatoire
+          if (!lastExec || lastExec.getMonth() !== today.getMonth()) {
+            // Première fois ce mois ou nouveau mois
+            const randomDay = Math.floor(Math.random() * 28) + 1; // Entre 1 et 28
+            if (today.getDate() === randomDay) {
+              shouldExecute = true;
+            }
+          }
+        }
+        
+        if (shouldExecute) {
+          // Calculer le montant
+          let amount;
+          if (recurring.amountType === 'fixed') {
+            amount = recurring.amount;
+          } else {
+            amount = Math.random() * (recurring.amountMax - recurring.amountMin) + recurring.amountMin;
+            amount = Math.round(amount * 100) / 100;
+          }
+          
+          const finalAmount = recurring.type === 'debit' ? -Math.abs(amount) : Math.abs(amount);
+          
+          // Créer la transaction
+          const newTx = {
+            id: Date.now() + index,
+            accountId: recurring.accountId,
+            name: recurring.name,
+            category: recurring.category || 'Automatique',
+            amount: finalAmount,
+            date: today.toISOString(),
+            logo: recurring.logo || '🔄',
+            type: recurring.type,
+            isRecurring: true
+          };
+          
+          newTransactions.unshift(newTx);
+          
+          // Mettre à jour le solde du compte
+          const accIndex = updatedAccounts.findIndex(a => a.id === recurring.accountId);
+          if (accIndex !== -1) {
+            updatedAccounts[accIndex].balance += finalAmount;
+          }
+          
+          // Mettre à jour lastExecuted
+          updatedRecurring[index] = {
+            ...recurring,
+            lastExecuted: today.toISOString()
+          };
+          
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        setTransactions(newTransactions);
+        setRecurringTransactions(updatedRecurring);
+        setAccounts(updatedAccounts);
+      }
+    };
+    
+    executeRecurringTransactions();
+  }, [loading, recurringTransactions]);
   
   const generateCardNumber = () => {
     const segments = [];
@@ -178,6 +273,35 @@ useEffect(() => {
     ));
     setShowModal(null);
     setFormData({});
+  };
+
+  const addRecurringTransaction = () => {
+    if (!formData.recurringName || !formData.recurringAccount) return;
+    
+    const newRecurring = {
+      id: Date.now(),
+      accountId: parseInt(formData.recurringAccount),
+      name: formData.recurringName,
+      logo: formData.recurringLogo || '🔄',
+      type: formData.recurringType || 'debit',
+      category: formData.recurringCategory || 'Automatique',
+      amountType: formData.amountType || 'fixed',
+      amount: parseFloat(formData.recurringAmount) || 0,
+      amountMin: parseFloat(formData.recurringAmountMin) || 0,
+      amountMax: parseFloat(formData.recurringAmountMax) || 0,
+      dateType: formData.dateType || 'fixed',
+      dayOfMonth: parseInt(formData.dayOfMonth) || 15,
+      frequency: 'monthly',
+      lastExecuted: null
+    };
+    
+    setRecurringTransactions([...recurringTransactions, newRecurring]);
+    setShowModal(null);
+    setFormData({});
+  };
+
+  const deleteRecurringTransaction = (id) => {
+    setRecurringTransactions(recurringTransactions.filter(r => r.id !== id));
   };
 
   const performTransfer = () => {
@@ -870,6 +994,107 @@ useEffect(() => {
               </div>
             )}
 
+            {showModal === 'addRecurring' && (
+              <div>
+                <h3 style={{ marginTop: 0 }}>Transaction automatique</h3>
+                
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                  Nom de l'entreprise
+                </label>
+                <input type="text" placeholder="Netflix, Salaire..." value={formData.recurringName || ''}
+                  onChange={(e) => setFormData({...formData, recurringName: e.target.value})}
+                  style={inputStyle(theme)} />
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                  Logo (emoji)
+                </label>
+                <input type="text" placeholder="🍔 💰 🏠" value={formData.recurringLogo || ''}
+                  onChange={(e) => setFormData({...formData, recurringLogo: e.target.value})}
+                  style={inputStyle(theme)} />
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                  Type
+                </label>
+                <select value={formData.recurringType || 'debit'}
+                  onChange={(e) => setFormData({...formData, recurringType: e.target.value})}
+                  style={inputStyle(theme)}>
+                  <option value="debit">Dépense</option>
+                  <option value="credit">Revenu</option>
+                </select>
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                  Compte concerné
+                </label>
+                <select value={formData.recurringAccount || ''}
+                  onChange={(e) => setFormData({...formData, recurringAccount: e.target.value})}
+                  style={inputStyle(theme)}>
+                  <option value="">Sélectionner un compte</option>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                  ))}
+                </select>
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                  Type de montant
+                </label>
+                <select value={formData.amountType || 'fixed'}
+                  onChange={(e) => setFormData({...formData, amountType: e.target.value})}
+                  style={inputStyle(theme)}>
+                  <option value="fixed">Montant fixe</option>
+                  <option value="random">Montant aléatoire</option>
+                </select>
+
+                {formData.amountType === 'fixed' ? (
+                  <>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                      Montant (€)
+                    </label>
+                    <input type="number" placeholder="50" value={formData.recurringAmount || ''}
+                      onChange={(e) => setFormData({...formData, recurringAmount: e.target.value})}
+                      style={inputStyle(theme)} />
+                  </>
+                ) : (
+                  <>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                      Montant minimum (€)
+                    </label>
+                    <input type="number" placeholder="30" value={formData.recurringAmountMin || ''}
+                      onChange={(e) => setFormData({...formData, recurringAmountMin: e.target.value})}
+                      style={inputStyle(theme)} />
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                      Montant maximum (€)
+                    </label>
+                    <input type="number" placeholder="80" value={formData.recurringAmountMax || ''}
+                      onChange={(e) => setFormData({...formData, recurringAmountMax: e.target.value})}
+                      style={inputStyle(theme)} />
+                  </>
+                )}
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                  Date d'exécution
+                </label>
+                <select value={formData.dateType || 'fixed'}
+                  onChange={(e) => setFormData({...formData, dateType: e.target.value})}
+                  style={inputStyle(theme)}>
+                  <option value="fixed">Date fixe dans le mois</option>
+                  <option value="random">Date aléatoire</option>
+                </select>
+
+                {formData.dateType === 'fixed' && (
+                  <>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+                      Jour du mois (1-28)
+                    </label>
+                    <input type="number" min="1" max="28" placeholder="15" value={formData.dayOfMonth || ''}
+                      onChange={(e) => setFormData({...formData, dayOfMonth: e.target.value})}
+                      style={inputStyle(theme)} />
+                  </>
+                )}
+
+                <button onClick={addRecurringTransaction} style={buttonStyle(theme)}>Créer la transaction automatique</button>
+              </div>
+            )}
+
             {showModal === 'transfer' && accounts.length >= 2 && (
               <div>
                 <h3 style={{ marginTop: 0 }}>Virement interne</h3>
@@ -980,7 +1205,7 @@ useEffect(() => {
               <div>
                 <h3 style={{ marginTop: 0 }}>Paramètres</h3>
                 
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '30px' }}>
                   <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Type de carte</h4>
                   {cards.length > 0 && (
                     <div>
@@ -1017,6 +1242,89 @@ useEffect(() => {
                   {cards.length === 0 && (
                     <p style={{ fontSize: '13px', color: theme.textSecondary }}>
                       Créez un compte pour avoir une carte
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ 
+                  marginBottom: '20px',
+                  paddingTop: '20px',
+                  borderTop: `1px solid ${theme.cardBg}`
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Transactions automatiques</h4>
+                    <button
+                      onClick={() => setShowModal('addRecurring')}
+                      style={{
+                        background: theme.accent,
+                        color: currentTheme === 'light' ? theme.bg : theme.text,
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Plus size={16} />
+                      Ajouter
+                    </button>
+                  </div>
+                  
+                  {recurringTransactions.length > 0 ? (
+                    <div>
+                      {recurringTransactions.map(recurring => {
+                        const acc = accounts.find(a => a.id === recurring.accountId);
+                        return (
+                          <div key={recurring.id} style={{
+                            background: theme.cardBg,
+                            padding: '12px',
+                            borderRadius: '12px',
+                            marginBottom: '10px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '24px' }}>{recurring.logo}</span>
+                              <div style={{ flex: 1 }}>
+                                <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>{recurring.name}</p>
+                                <p style={{ margin: '4px 0 0', fontSize: '13px', color: theme.textSecondary }}>
+                                  {acc?.name} • {recurring.dateType === 'fixed' ? `Le ${recurring.dayOfMonth}` : 'Date aléatoire'}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => deleteRecurringTransaction(recurring.id)}
+                                style={{
+                                  background: '#ff4444',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '6px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                Supprimer
+                              </button>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '14px', color: theme.text }}>
+                              {recurring.amountType === 'fixed' 
+                                ? `${recurring.amount.toFixed(2)} €` 
+                                : `${recurring.amountMin.toFixed(2)} - ${recurring.amountMax.toFixed(2)} €`}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: '13px', color: theme.textSecondary, fontStyle: 'italic' }}>
+                      Aucune transaction automatique configurée
                     </p>
                   )}
                 </div>
@@ -1069,6 +1377,7 @@ useEffect(() => {
                     <li>Gestion multi-comptes</li>
                     <li>Cartes bancaires virtuelles</li>
                     <li>Transactions et virements</li>
+                    <li>Transactions automatiques récurrentes</li>
                     <li>Thèmes personnalisables</li>
                     <li>Stockage sécurisé des données</li>
                   </ul>
@@ -1121,7 +1430,10 @@ const TransactionItem = ({ tx, theme }) => (
       alignItems: 'center', justifyContent: 'center', fontSize: '24px'
     }}>{tx.logo}</div>
     <div style={{ flex: 1 }}>
-      <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>{tx.name}</p>
+      <p style={{ margin: 0, fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {tx.name}
+        {tx.isRecurring && <span style={{ fontSize: '12px' }}>🔄</span>}
+      </p>
       <p style={{ margin: 0, fontSize: '13px', color: theme.textSecondary, marginTop: '2px' }}>{tx.category}</p>
     </div>
     <div style={{ textAlign: 'right' }}>
