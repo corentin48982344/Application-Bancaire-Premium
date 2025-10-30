@@ -347,7 +347,8 @@ useEffect(() => {
               <div style={{
                 position: 'absolute',
                 width: 'calc(100% - 40px)', 
-                left: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 height: '100%',
                 backfaceVisibility: 'hidden',
                 background: currentTheme === 'classic' ? theme.cardFront : theme.cardFront,
@@ -416,7 +417,8 @@ useEffect(() => {
               <div style={{
                 position: 'absolute',
                 width: 'calc(100% - 40px)',
-                left: '20px',
+                left: '50%',
+                transform: 'translateX(-50%) rotateY(180deg)',
                 height: '100%',
                 backfaceVisibility: 'hidden',
                 background: theme.cardBack,
