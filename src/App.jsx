@@ -349,7 +349,7 @@ useEffect(() => {
                 width: 'calc(100% - 90px)', 
                 left: '50%',
                 transform: 'translateX(-50%)',
-                height: '10%',
+                height: '70%',
                 backfaceVisibility: 'hidden',
                 background: currentTheme === 'classic' ? theme.cardFront : theme.cardFront,
                 borderRadius: '16px',
