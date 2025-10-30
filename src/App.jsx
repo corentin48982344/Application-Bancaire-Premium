@@ -330,7 +330,7 @@ useEffect(() => {
 <div style={{
   background: theme.cardBg,
   borderRadius: '16px',
-  padding: '20px',
+  padding: '0',
   marginBottom: '20px'
 }}>
          <div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
