@@ -305,7 +305,7 @@ useEffect(() => {
 
     return (
       <div>
-<div style={{ position: 'relative', marginBottom: '30px', minHeight: '240px' }}>          {cards.length > 1 && (
+<div style={{ position: 'relative', marginBottom: '30px', minHeight: '240px', padding: '0 20px' }}>          {cards.length > 1 && (
             <>
               <button onClick={() => setCurrentCardIndex((currentCardIndex - 1 + cards.length) % cards.length)}
                 style={{
@@ -328,10 +328,9 @@ useEffect(() => {
             </>
           )}
 
-         <div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
+<div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
   style={{
-    width: 'calc(100% - 40px)',
-    margin: '0 auto',
+    width: '100%',
     height: '200px',
     perspective: '1200px',
     cursor: 'pointer',
