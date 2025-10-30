@@ -327,15 +327,11 @@ useEffect(() => {
               </button>
             </>
           )}
-<div style={{
-  background: theme.cardBg,
-  borderRadius: '16px',
-  padding: '10',
-  marginBottom: '20px'
-}}>
+
          <div onClick={() => setFlippedCard(flippedCard === currentCard?.id ? null : currentCard?.id)}
   style={{
-    width: '100%',
+    width: 'calc(100% - 40px)',
+    margin: '0 20px',
     height: '200px',
     perspective: '1200px',
     cursor: 'pointer',
@@ -464,7 +460,6 @@ useEffect(() => {
               </div>
             </div>
           </div>
-        </div> {/* Fin wrapper carte */}
           {cards.length > 1 && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'center' }}>
               {cards.map((_, i) => (
