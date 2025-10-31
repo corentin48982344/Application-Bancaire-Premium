@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Home, CreditCard, Activity, TrendingUp, ChevronLeft, ChevronRight, Eye, EyeOff, Plus, ArrowUpRight, X, Settings, Palette, Shield, Download, Info, Lock, Unlock, Edit2, Calendar, Repeat } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Home, CreditCard, Activity, TrendingUp, ChevronLeft, ChevronRight, Eye, EyeOff, Plus, ArrowUpRight, X, Settings, Shield, Download, Info, Lock, Unlock, Edit2, Upload, Trash2 } from 'lucide-react';
 
 const themes = {
   classic: {
@@ -69,14 +69,33 @@ const logoLibrary = {
   }
 };
 
-// Composant sélecteur de logo
-const LogoSelector = ({ value, onChange, theme }) => {
-  const [selectedCategory, setSelectedCategory] = useState('restaurants');
-  
+// Composant sélecteur de logo avec import personnalisé
+const LogoSelector = ({ value, onChange, theme, customLogos, onAddCustomLogo, onDeleteCustomLogo }) => {
+  const [selectedCategory, setSelectedCategory] = useState('custom');
+  const fileInputRef = useRef(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target.result;
+        onAddCustomLogo(base64);
+        onChange(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div style={{ marginBottom: '15px' }}>
       <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
-        Logo sélectionné : {value || '💰'}
+        Logo sélectionné : 
+        {value && value.startsWith('data:image') ? (
+          <img src={value} alt="Logo" style={{ width: '32px', height: '32px', marginLeft: '8px', borderRadius: '6px', verticalAlign: 'middle' }} />
+        ) : (
+          <span style={{ marginLeft: '8px', fontSize: '24px', verticalAlign: 'middle' }}>{value || '💰'}</span>
+        )}
       </label>
       
       {/* Catégories */}
@@ -87,6 +106,22 @@ const LogoSelector = ({ value, onChange, theme }) => {
         marginBottom: '12px',
         paddingBottom: '8px'
       }}>
+        <button
+          onClick={() => setSelectedCategory('custom')}
+          style={{
+            padding: '8px 12px',
+            background: selectedCategory === 'custom' ? theme.accent + '33' : theme.cardBg,
+            border: selectedCategory === 'custom' ? `2px solid ${theme.accent}` : `1px solid ${theme.cardBg}`,
+            borderRadius: '8px',
+            color: theme.text,
+            fontSize: '12px',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            fontWeight: selectedCategory === 'custom' ? '600' : '400'
+          }}
+        >
+          Mes logos
+        </button>
         {Object.entries(logoLibrary).map(([key, cat]) => (
           <button
             key={key}
@@ -108,7 +143,7 @@ const LogoSelector = ({ value, onChange, theme }) => {
         ))}
       </div>
 
-      {/* Grille d'emojis */}
+      {/* Grille */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(5, 1fr)',
@@ -119,28 +154,106 @@ const LogoSelector = ({ value, onChange, theme }) => {
         maxHeight: '200px',
         overflowY: 'auto'
       }}>
-        {logoLibrary[selectedCategory].emojis.map(emoji => (
-          <button
-            key={emoji}
-            onClick={() => onChange(emoji)}
-            style={{
-              width: '100%',
-              aspectRatio: '1',
-              padding: '8px',
-              background: value === emoji ? theme.accent + '33' : 'transparent',
-              border: value === emoji ? `2px solid ${theme.accent}` : 'none',
-              borderRadius: '8px',
-              fontSize: '28px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s'
-            }}
-          >
-            {emoji}
-          </button>
-        ))}
+        {selectedCategory === 'custom' ? (
+          <>
+            {/* Bouton d'upload */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: '100%',
+                aspectRatio: '1',
+                padding: '8px',
+                background: theme.accent + '22',
+                border: `2px dashed ${theme.accent}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: '4px'
+              }}
+            >
+              <Upload size={20} color={theme.accent} />
+              <span style={{ fontSize: '10px', color: theme.accent }}>Importer</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+
+            {/* Logos personnalisés */}
+            {customLogos.map((logo, index) => (
+              <div key={index} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => onChange(logo)}
+                  style={{
+                    width: '100%',
+                    aspectRatio: '1',
+                    padding: '4px',
+                    background: value === logo ? theme.accent + '33' : 'transparent',
+                    border: value === logo ? `2px solid ${theme.accent}` : 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteCustomLogo(index);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: '#ff4444',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px'
+                  }}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </>
+        ) : (
+          logoLibrary[selectedCategory].emojis.map(emoji => (
+            <button
+              key={emoji}
+              onClick={() => onChange(emoji)}
+              style={{
+                width: '100%',
+                aspectRatio: '1',
+                padding: '8px',
+                background: value === emoji ? theme.accent + '33' : 'transparent',
+                border: value === emoji ? `2px solid ${theme.accent}` : 'none',
+                borderRadius: '8px',
+                fontSize: '28px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+            >
+              {emoji}
+            </button>
+          ))
+        )}
       </div>
     </div>
   );
@@ -162,48 +275,50 @@ const EliteBanking = () => {
   const [flippedCard, setFlippedCard] = useState(null);
   const [revealedInfo, setRevealedInfo] = useState({});
   const [recurringTransactions, setRecurringTransactions] = useState([]);
+  const [customLogos, setCustomLogos] = useState([]);
 
   const theme = themes[currentTheme];
 
+  // Chargement initial des données depuis localStorage
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 2500);
-    loadData();
+    
+    try {
+      const savedAccounts = localStorage.getItem('elite_banking_accounts');
+      const savedCards = localStorage.getItem('elite_banking_cards');
+      const savedTransactions = localStorage.getItem('elite_banking_transactions');
+      const savedTheme = localStorage.getItem('elite_banking_theme');
+      const savedRecurring = localStorage.getItem('elite_banking_recurring');
+      const savedCustomLogos = localStorage.getItem('elite_banking_custom_logos');
+      
+      if (savedAccounts) setAccounts(JSON.parse(savedAccounts));
+      if (savedCards) setCards(JSON.parse(savedCards));
+      if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
+      if (savedTheme) setCurrentTheme(savedTheme);
+      if (savedRecurring) setRecurringTransactions(JSON.parse(savedRecurring));
+      if (savedCustomLogos) setCustomLogos(JSON.parse(savedCustomLogos));
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+    
     return () => clearTimeout(timer);
   }, []);
 
-  const loadData = async () => {
-    try {
-      const accountsData = await window.storage.get('accounts');
-      const cardsData = await window.storage.get('cards');
-      const transactionsData = await window.storage.get('transactions');
-      const themeData = await window.storage.get('theme');
-      const recurringData = await window.storage.get('recurringTransactions');
-      
-      if (accountsData) setAccounts(JSON.parse(accountsData.value));
-      if (cardsData) setCards(JSON.parse(cardsData.value));
-      if (transactionsData) setTransactions(JSON.parse(transactionsData.value));
-      if (themeData) setCurrentTheme(themeData.value);
-      if (recurringData) setRecurringTransactions(JSON.parse(recurringData.value));
-    } catch (error) {
-      console.log('New user');
-    }
-  };
-
-  const saveData = async () => {
-    try {
-      await window.storage.set('accounts', JSON.stringify(accounts));
-      await window.storage.set('cards', JSON.stringify(cards));
-      await window.storage.set('transactions', JSON.stringify(transactions));
-      await window.storage.set('theme', currentTheme);
-      await window.storage.set('recurringTransactions', JSON.stringify(recurringTransactions));
-    } catch (error) {
-      console.error('Save error:', error);
-    }
-  };
-
+  // Sauvegarde automatique dans localStorage à chaque changement
   useEffect(() => {
-    if (!loading && accounts.length > 0) saveData();
-  }, [accounts, cards, transactions, recurringTransactions, currentTheme, loading]);
+    if (!loading) {
+      try {
+        localStorage.setItem('elite_banking_accounts', JSON.stringify(accounts));
+        localStorage.setItem('elite_banking_cards', JSON.stringify(cards));
+        localStorage.setItem('elite_banking_transactions', JSON.stringify(transactions));
+        localStorage.setItem('elite_banking_theme', currentTheme);
+        localStorage.setItem('elite_banking_recurring', JSON.stringify(recurringTransactions));
+        localStorage.setItem('elite_banking_custom_logos', JSON.stringify(customLogos));
+      } catch (error) {
+        console.error('Error saving data:', error);
+      }
+    }
+  }, [accounts, cards, transactions, recurringTransactions, currentTheme, customLogos, loading]);
 
   useEffect(() => {
     const metaTheme = document.querySelector('meta[name="theme-color"]');
@@ -233,22 +348,17 @@ const EliteBanking = () => {
         const lastExec = recurring.lastExecuted ? new Date(recurring.lastExecuted) : null;
         const lastExecStr = lastExec ? lastExec.toISOString().split('T')[0] : null;
         
-        // Si déjà exécuté aujourd'hui, skip
         if (lastExecStr === todayStr) return;
         
-        // Calculer si on doit exécuter aujourd'hui
         let shouldExecute = false;
         
         if (recurring.dateType === 'fixed') {
-          // Date fixe dans le mois
           if (today.getDate() === recurring.dayOfMonth) {
             shouldExecute = true;
           }
         } else {
-          // Date aléatoire
           if (!lastExec || lastExec.getMonth() !== today.getMonth()) {
-            // Première fois ce mois ou nouveau mois
-            const randomDay = Math.floor(Math.random() * 28) + 1; // Entre 1 et 28
+            const randomDay = Math.floor(Math.random() * 28) + 1;
             if (today.getDate() === randomDay) {
               shouldExecute = true;
             }
@@ -256,7 +366,6 @@ const EliteBanking = () => {
         }
         
         if (shouldExecute) {
-          // Calculer le montant
           let amount;
           if (recurring.amountType === 'fixed') {
             amount = recurring.amount;
@@ -267,7 +376,6 @@ const EliteBanking = () => {
           
           const finalAmount = recurring.type === 'debit' ? -Math.abs(amount) : Math.abs(amount);
           
-          // Créer la transaction
           const newTx = {
             id: Date.now() + index,
             accountId: recurring.accountId,
@@ -282,13 +390,11 @@ const EliteBanking = () => {
           
           newTransactions.unshift(newTx);
           
-          // Mettre à jour le solde du compte
           const accIndex = updatedAccounts.findIndex(a => a.id === recurring.accountId);
           if (accIndex !== -1) {
             updatedAccounts[accIndex].balance += finalAmount;
           }
           
-          // Mettre à jour lastExecuted
           updatedRecurring[index] = {
             ...recurring,
             lastExecuted: today.toISOString()
@@ -492,6 +598,14 @@ const EliteBanking = () => {
     });
     setShowModal(null);
     setFormData({});
+  };
+
+  const addCustomLogo = (base64) => {
+    setCustomLogos([...customLogos, base64]);
+  };
+
+  const deleteCustomLogo = (index) => {
+    setCustomLogos(customLogos.filter((_, i) => i !== index));
   };
 
   if (loading) {
@@ -1103,11 +1217,13 @@ const EliteBanking = () => {
                   onChange={(e) => setFormData({...formData, category: e.target.value})}
                   style={inputStyle(theme)} />
                 
-                {/* Bibliothèque de logos pour transaction manuelle */}
                 <LogoSelector 
                   value={formData.transactionLogo || '💰'} 
                   onChange={(logo) => setFormData({...formData, transactionLogo: logo})}
                   theme={theme}
+                  customLogos={customLogos}
+                  onAddCustomLogo={addCustomLogo}
+                  onDeleteCustomLogo={deleteCustomLogo}
                 />
                 
                 <button onClick={addTransaction} style={buttonStyle(theme)}>Ajouter</button>
@@ -1125,11 +1241,13 @@ const EliteBanking = () => {
                   onChange={(e) => setFormData({...formData, recurringName: e.target.value})}
                   style={inputStyle(theme)} />
 
-                {/* Bibliothèque de logos */}
                 <LogoSelector 
                   value={formData.recurringLogo || '🔄'} 
                   onChange={(logo) => setFormData({...formData, recurringLogo: logo})}
                   theme={theme}
+                  customLogos={customLogos}
+                  onAddCustomLogo={addCustomLogo}
+                  onDeleteCustomLogo={deleteCustomLogo}
                 />
 
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
@@ -1403,6 +1521,7 @@ const EliteBanking = () => {
                     <div>
                       {recurringTransactions.map(recurring => {
                         const acc = accounts.find(a => a.id === recurring.accountId);
+                        const isCustomLogo = recurring.logo && recurring.logo.startsWith('data:image');
                         return (
                           <div key={recurring.id} style={{
                             background: theme.cardBg,
@@ -1411,7 +1530,11 @@ const EliteBanking = () => {
                             marginBottom: '10px'
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '24px' }}>{recurring.logo}</span>
+                              {isCustomLogo ? (
+                                <img src={recurring.logo} alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover' }} />
+                              ) : (
+                                <span style={{ fontSize: '24px' }}>{recurring.logo}</span>
+                              )}
                               <div style={{ flex: 1 }}>
                                 <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>{recurring.name}</p>
                                 <p style={{ margin: '4px 0 0', fontSize: '13px', color: theme.textSecondary }}>
@@ -1499,8 +1622,9 @@ const EliteBanking = () => {
                     <li>Transactions et virements</li>
                     <li>Transactions automatiques récurrentes</li>
                     <li>Bibliothèque de logos par catégories</li>
+                    <li>Import de logos personnalisés</li>
                     <li>Thèmes personnalisables</li>
-                    <li>Stockage sécurisé des données</li>
+                    <li>Stockage persistant des données</li>
                   </ul>
                 </div>
 
@@ -1540,32 +1664,43 @@ const QuickAction = ({ icon, label, onClick, theme }) => (
   </button>
 );
 
-const TransactionItem = ({ tx, theme }) => (
-  <div style={{
-    background: theme.cardBg, borderRadius: '12px', padding: '16px',
-    display: 'flex', alignItems: 'center', gap: '15px'
-  }}>
+const TransactionItem = ({ tx, theme }) => {
+  const isCustomLogo = tx.logo && tx.logo.startsWith('data:image');
+  
+  return (
     <div style={{
-      width: '48px', height: '48px', borderRadius: '50%',
-      background: `${theme.accent}22`, display: 'flex',
-      alignItems: 'center', justifyContent: 'center', fontSize: '24px'
-    }}>{tx.logo}</div>
-    <div style={{ flex: 1 }}>
-      <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>
-        {tx.name}
-      </p>
-      <p style={{ margin: 0, fontSize: '13px', color: theme.textSecondary, marginTop: '2px' }}>{tx.category}</p>
+      background: theme.cardBg, borderRadius: '12px', padding: '16px',
+      display: 'flex', alignItems: 'center', gap: '15px'
+    }}>
+      <div style={{
+        width: '48px', height: '48px', borderRadius: '50%',
+        background: `${theme.accent}22`, display: 'flex',
+        alignItems: 'center', justifyContent: 'center', fontSize: '24px',
+        overflow: 'hidden'
+      }}>
+        {isCustomLogo ? (
+          <img src={tx.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          tx.logo
+        )}
+      </div>
+      <div style={{ flex: 1 }}>
+        <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>
+          {tx.name}
+        </p>
+        <p style={{ margin: 0, fontSize: '13px', color: theme.textSecondary, marginTop: '2px' }}>{tx.category}</p>
+      </div>
+      <div style={{ textAlign: 'right' }}>
+        <p style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: tx.type === 'credit' ? '#4CAF50' : theme.text }}>
+          {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+        </p>
+        <p style={{ margin: 0, fontSize: '12px', color: theme.textSecondary, marginTop: '2px' }}>
+          {new Date(tx.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+        </p>
+      </div>
     </div>
-    <div style={{ textAlign: 'right' }}>
-      <p style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: tx.type === 'credit' ? '#4CAF50' : theme.text }}>
-        {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-      </p>
-      <p style={{ margin: 0, fontSize: '12px', color: theme.textSecondary, marginTop: '2px' }}>
-        {new Date(tx.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-      </p>
-    </div>
-  </div>
-);
+  );
+};
 
 const TabBtn = ({ icon, label, active, onClick, theme }) => (
   <button onClick={onClick} style={{
