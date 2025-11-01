@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, CreditCard, Activity, TrendingUp, ChevronLeft, ChevronRight, Eye, EyeOff, Plus, ArrowUpRight, X, Settings, Shield, Download, Info, Lock, Unlock, Edit2, Upload, Trash2 } from 'lucide-react';
+import { Home, CreditCard, Activity, TrendingUp, ChevronLeft, ChevronRight, Eye, EyeOff, Plus, ArrowUpRight, X, Settings, Shield, Download, Info, Lock, Unlock, Edit2, Upload, Trash2, Copy } from 'lucide-react';
 
 const themes = {
   classic: {
@@ -276,6 +276,9 @@ const EliteBanking = () => {
   const [revealedInfo, setRevealedInfo] = useState({});
   const [recurringTransactions, setRecurringTransactions] = useState([]);
   const [customLogos, setCustomLogos] = useState([]);
+  const [copiedIban, setCopiedIban] = useState(false);
+  const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const theme = themes[currentTheme];
 
@@ -290,6 +293,7 @@ const EliteBanking = () => {
       const savedTheme = localStorage.getItem('elite_banking_theme');
       const savedRecurring = localStorage.getItem('elite_banking_recurring');
       const savedCustomLogos = localStorage.getItem('elite_banking_custom_logos');
+      const savedUserProfile = localStorage.getItem('elite_banking_user_profile');
       
       if (savedAccounts) setAccounts(JSON.parse(savedAccounts));
       if (savedCards) setCards(JSON.parse(savedCards));
@@ -297,6 +301,12 @@ const EliteBanking = () => {
       if (savedTheme) setCurrentTheme(savedTheme);
       if (savedRecurring) setRecurringTransactions(JSON.parse(savedRecurring));
       if (savedCustomLogos) setCustomLogos(JSON.parse(savedCustomLogos));
+      if (savedUserProfile) {
+        setUserProfile(JSON.parse(savedUserProfile));
+      } else {
+        // Première utilisation - afficher le modal de bienvenue
+        setTimeout(() => setShowWelcome(true), 3000);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -314,11 +324,12 @@ const EliteBanking = () => {
         localStorage.setItem('elite_banking_theme', currentTheme);
         localStorage.setItem('elite_banking_recurring', JSON.stringify(recurringTransactions));
         localStorage.setItem('elite_banking_custom_logos', JSON.stringify(customLogos));
+        localStorage.setItem('elite_banking_user_profile', JSON.stringify(userProfile));
       } catch (error) {
         console.error('Error saving data:', error);
       }
     }
-  }, [accounts, cards, transactions, recurringTransactions, currentTheme, customLogos, loading]);
+  }, [accounts, cards, transactions, recurringTransactions, currentTheme, customLogos, userProfile, loading]);
 
   useEffect(() => {
     const metaTheme = document.querySelector('meta[name="theme-color"]');
@@ -436,13 +447,52 @@ const EliteBanking = () => {
     return `${month}/${year}`;
   };
 
+  // Fonction pour calculer la clé RIB
+  const calculateRIBKey = (codeBank, codeGuichet, accountNumber) => {
+    const ribString = codeBank + codeGuichet + accountNumber;
+    const ribNumber = BigInt(ribString);
+    const key = 97n - (ribNumber % 97n);
+    return key.toString().padStart(2, '0');
+  };
+
+  // Fonction pour générer un RIB français complet
+  const generateRIB = () => {
+    const codeBank = '30004'; // Code banque Elite Banking
+    const codeGuichet = Math.floor(10000 + Math.random() * 90000).toString(); // 5 chiffres
+    const accountNumber = Math.floor(10000000000 + Math.random() * 90000000000).toString(); // 11 chiffres
+    const key = calculateRIBKey(codeBank, codeGuichet, accountNumber);
+    
+    // Construction de l'IBAN
+    const bban = codeBank + codeGuichet + accountNumber + key; // 23 chiffres
+    const iban = `FR76 ${codeBank} ${codeGuichet} ${accountNumber.substring(0, 5)} ${accountNumber.substring(5)} ${key}`;
+    
+    return {
+      codeBank,
+      codeGuichet,
+      accountNumber,
+      key,
+      iban,
+      bic: 'ELITFRPP',
+      domiciliation: 'Elite Banking - Agence Opéra\n12 Place Vendôme\n75001 Paris'
+    };
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIban(true);
+      setTimeout(() => setCopiedIban(false), 2000);
+    });
+  };
+
   const addAccount = () => {
+    const ribData = generateRIB();
+    
     const newAccount = {
       id: Date.now(),
       name: formData.accountName || `Compte ${accounts.length + 1}`,
       balance: parseFloat(formData.initialBalance) || 0,
       currency: formData.currency || 'EUR',
-      iban: `FR76 ${Math.floor(Math.random()*10000).toString().padStart(4,'0')} ${Math.floor(Math.random()*10000).toString().padStart(4,'0')} ${Math.floor(Math.random()*10000).toString().padStart(4,'0')} ${Math.floor(Math.random()*10000).toString().padStart(4,'0')}`,
+      rib: ribData,
       createdAt: new Date().toISOString()
     };
     
@@ -608,6 +658,195 @@ const EliteBanking = () => {
     setCustomLogos(customLogos.filter((_, i) => i !== index));
   };
 
+  const generateRIBPDF = (account) => {
+    if (!account || !account.rib) return;
+
+    const rib = account.rib;
+    const fullName = `${userProfile.firstName} ${userProfile.lastName}`;
+
+    // Créer le contenu HTML du PDF
+    const pdfContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>RIB - ${account.name}</title>
+        <style>
+          @page { margin: 2cm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 40px;
+            background: white;
+            color: #000;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 50px;
+            border-bottom: 3px solid #D4AF37;
+            padding-bottom: 30px;
+          }
+          .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #1A1A1A 0%, #2A2A2A 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 300;
+            color: #D4AF37;
+            border: 2px solid #D4AF37;
+          }
+          h1 {
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: #1A1A1A;
+            margin-bottom: 10px;
+          }
+          h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #D4AF37;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .content {
+            max-width: 600px;
+            margin: 0 auto;
+          }
+          .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #F8F8F8;
+            border-radius: 12px;
+            border-left: 4px solid #D4AF37;
+          }
+          .field {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+          }
+          .field:last-child { margin-bottom: 0; }
+          .label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            flex: 0 0 180px;
+          }
+          .value {
+            font-size: 14px;
+            color: #000;
+            font-weight: 500;
+            font-family: 'Courier New', monospace;
+            text-align: right;
+            flex: 1;
+          }
+          .iban-highlight {
+            font-size: 16px;
+            font-weight: 600;
+            color: #D4AF37;
+          }
+          .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            border-top: 1px solid #DDD;
+            padding-top: 20px;
+          }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">E</div>
+          <h1>ELITE BANKING</h1>
+          <h2>Relevé d'Identité Bancaire</h2>
+        </div>
+        
+        <div class="content">
+          <div class="section">
+            <div class="field">
+              <span class="label">Titulaire</span>
+              <span class="value">${fullName}</span>
+            </div>
+            <div class="field">
+              <span class="label">Nom du compte</span>
+              <span class="value">${account.name}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="field">
+              <span class="label">Code Banque</span>
+              <span class="value">${rib.codeBank}</span>
+            </div>
+            <div class="field">
+              <span class="label">Code Guichet</span>
+              <span class="value">${rib.codeGuichet}</span>
+            </div>
+            <div class="field">
+              <span class="label">Numéro de compte</span>
+              <span class="value">${rib.accountNumber}</span>
+            </div>
+            <div class="field">
+              <span class="label">Clé RIB</span>
+              <span class="value">${rib.key}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="field">
+              <span class="label">IBAN</span>
+              <span class="value iban-highlight">${rib.iban}</span>
+            </div>
+            <div class="field">
+              <span class="label">BIC / SWIFT</span>
+              <span class="value">${rib.bic}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="field">
+              <span class="label">Domiciliation</span>
+              <span class="value" style="text-align: right; line-height: 1.6;">
+                ${rib.domiciliation.replace(/\n/g, '<br>')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>Document généré le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p style="margin-top: 10px;">Elite Banking - Banque fictive à usage personnel</p>
+        </div>
+
+        <script>
+          // Impression automatique au chargement
+          window.onload = function() {
+            setTimeout(() => window.print(), 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    // Ouvrir dans une nouvelle fenêtre pour impression/PDF
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(pdfContent);
+    printWindow.document.close();
+  };
+
   if (loading) {
     return (
       <div style={{
@@ -751,7 +990,9 @@ const EliteBanking = () => {
                       Titulaire
                     </p>
                     <p style={{ margin: '4px 0 0', fontSize: '14px', color: theme.text, fontWeight: '500', textTransform: 'uppercase' }}>
-                      Elite Member
+                      {userProfile.firstName && userProfile.lastName 
+                        ? `${userProfile.firstName} ${userProfile.lastName}`.toUpperCase()
+                        : 'Elite Member'}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -992,7 +1233,9 @@ const EliteBanking = () => {
                           fontSize: '14px', fontFamily: 'inherit', padding: 0, outline: 'none', width: '100%'
                         }}
                       />
-                      <p style={{ color: theme.textSecondary, fontSize: '12px', margin: '5px 0 0' }}>{currentAccount.iban}</p>
+                      <p style={{ color: theme.textSecondary, fontSize: '12px', margin: '5px 0 0' }}>
+                        {currentAccount.rib?.iban || currentAccount.iban || 'IBAN non disponible'}
+                      </p>
                     </div>
                     <button onClick={() => setBalanceVisible(!balanceVisible)}
                       style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: theme.textSecondary }}>
@@ -1019,7 +1262,7 @@ const EliteBanking = () => {
               </div>
             ) : (
               <div style={{ background: theme.cardBg, borderRadius: '20px', padding: '40px', textAlign: 'center', marginBottom: '30px' }}>
-                <p style={{ color: theme.textSecondary, marginBottom: '20px' }}>Bienvenue sur Elite Banking</p>
+                <p style={{ color: theme.textSecondary, marginBottom: '20px' }}>Bienvenue chez Elite Banking</p>
                 <button onClick={() => setShowModal('createAccount')}
                   style={{
                     background: theme.accent, color: currentTheme === 'light' ? theme.bg : theme.text,
@@ -1035,7 +1278,7 @@ const EliteBanking = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '30px' }}>
                   <QuickAction icon={<ArrowUpRight size={20} />} label="Virement" onClick={() => setShowModal('transfer')} theme={theme} />
                   <QuickAction icon={<Plus size={20} />} label="Transaction" onClick={() => setShowModal('addTransaction')} theme={theme} />
-                  <QuickAction icon={<CreditCard size={20} />} label="Compte" onClick={() => setShowModal('createAccount')} theme={theme} />
+                  <QuickAction icon={<CreditCard size={20} />} label="RIB" onClick={() => setShowModal('rib')} theme={theme} />
                 </div>
 
                 {currentAccountTransactions.length > 0 && (
@@ -1107,7 +1350,11 @@ const EliteBanking = () => {
                 border: `2px solid ${theme.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '24px', fontWeight: '600', color: theme.accent, marginBottom: '15px'
               }}>E</div>
-              <h3 style={{ margin: 0, fontSize: '18px' }}>Elite Member</h3>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>
+                {userProfile.firstName && userProfile.lastName 
+                  ? `${userProfile.firstName} ${userProfile.lastName}`
+                  : 'Elite Member'}
+              </h3>
               <p style={{ margin: '5px 0 0', fontSize: '14px', color: theme.textSecondary }}>
                 {accounts.length} compte{accounts.length > 1 ? 's' : ''}
               </p>
@@ -1195,6 +1442,247 @@ const EliteBanking = () => {
                   <option value="GBP">GBP (£)</option>
                 </select>
                 <button onClick={addAccount} style={buttonStyle(theme)}>Créer le compte</button>
+              </div>
+            )}
+
+            {showModal === 'rib' && currentAccount && (
+              <div>
+                <h3 style={{ marginTop: 0, marginBottom: '24px' }}>
+                  RIB - {currentAccount.name}
+                </h3>
+                
+                <div style={{ 
+                  background: theme.cardBg,
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '20px'
+                }}>
+                  {/* Titulaire */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <p style={{ 
+                      margin: '0 0 8px', 
+                      fontSize: '11px', 
+                      color: theme.textSecondary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      fontWeight: '600'
+                    }}>
+                      Titulaire
+                    </p>
+                    <p style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: theme.text }}>
+                      {userProfile.firstName && userProfile.lastName 
+                        ? `${userProfile.firstName} ${userProfile.lastName}`
+                        : 'Elite Member'}
+                    </p>
+                  </div>
+
+                  {/* Coordonnées bancaires */}
+                  <div style={{ 
+                    borderTop: `1px solid ${currentTheme === 'light' ? '#E0E0E0' : '#2A2A2A'}`,
+                    paddingTop: '20px',
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+                      <div>
+                        <p style={{ 
+                          margin: '0 0 6px', 
+                          fontSize: '11px', 
+                          color: theme.textSecondary,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Code Banque
+                        </p>
+                        <p style={{ 
+                          margin: 0, 
+                          fontSize: '15px', 
+                          fontWeight: '500', 
+                          fontFamily: 'monospace',
+                          color: theme.text
+                        }}>
+                          {currentAccount.rib?.codeBank || '30004'}
+                        </p>
+                      </div>
+                      <div>
+                        <p style={{ 
+                          margin: '0 0 6px', 
+                          fontSize: '11px', 
+                          color: theme.textSecondary,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          Code Guichet
+                        </p>
+                        <p style={{ 
+                          margin: 0, 
+                          fontSize: '15px', 
+                          fontWeight: '500', 
+                          fontFamily: 'monospace',
+                          color: theme.text
+                        }}>
+                          {currentAccount.rib?.codeGuichet || '-----'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '12px' }}>
+                      <p style={{ 
+                        margin: '0 0 6px', 
+                        fontSize: '11px', 
+                        color: theme.textSecondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        Numéro de compte
+                      </p>
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '15px', 
+                        fontWeight: '500', 
+                        fontFamily: 'monospace',
+                        color: theme.text
+                      }}>
+                        {currentAccount.rib?.accountNumber || '-----------'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p style={{ 
+                        margin: '0 0 6px', 
+                        fontSize: '11px', 
+                        color: theme.textSecondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        Clé RIB
+                      </p>
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '15px', 
+                        fontWeight: '500', 
+                        fontFamily: 'monospace',
+                        color: theme.text
+                      }}>
+                        {currentAccount.rib?.key || '--'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* IBAN & BIC */}
+                  <div style={{ 
+                    borderTop: `1px solid ${currentTheme === 'light' ? '#E0E0E0' : '#2A2A2A'}`,
+                    paddingTop: '20px',
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <p style={{ 
+                        margin: '0 0 8px', 
+                        fontSize: '11px', 
+                        color: theme.textSecondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        fontWeight: '600'
+                      }}>
+                        IBAN
+                      </p>
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '16px', 
+                        fontWeight: '600', 
+                        fontFamily: 'monospace',
+                        color: theme.accent,
+                        letterSpacing: '0.5px'
+                      }}>
+                        {currentAccount.rib?.iban || currentAccount.iban}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p style={{ 
+                        margin: '0 0 6px', 
+                        fontSize: '11px', 
+                        color: theme.textSecondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        BIC / SWIFT
+                      </p>
+                      <p style={{ 
+                        margin: 0, 
+                        fontSize: '15px', 
+                        fontWeight: '500', 
+                        fontFamily: 'monospace',
+                        color: theme.text
+                      }}>
+                        {currentAccount.rib?.bic || 'ELITFRPP'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Domiciliation */}
+                  <div style={{ 
+                    borderTop: `1px solid ${currentTheme === 'light' ? '#E0E0E0' : '#2A2A2A'}`,
+                    paddingTop: '20px'
+                  }}>
+                    <p style={{ 
+                      margin: '0 0 8px', 
+                      fontSize: '11px', 
+                      color: theme.textSecondary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      fontWeight: '600'
+                    }}>
+                      Domiciliation
+                    </p>
+                    <p style={{ 
+                      margin: 0, 
+                      fontSize: '13px', 
+                      color: theme.text,
+                      lineHeight: '1.6',
+                      whiteSpace: 'pre-line'
+                    }}>
+                      {currentAccount.rib?.domiciliation || 'Elite Banking - Agence Opéra\n12 Place Vendôme\n75001 Paris'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Boutons */}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    onClick={() => copyToClipboard(currentAccount.rib?.iban || currentAccount.iban)}
+                    style={{
+                      ...buttonStyle(theme),
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      marginTop: 0,
+                      background: theme.cardBg,
+                      color: theme.text,
+                      border: `2px solid ${theme.accent}`
+                    }}
+                  >
+                    <Copy size={18} />
+                    {copiedIban ? 'IBAN copié !' : 'Copier IBAN'}
+                  </button>
+
+                  <button 
+                    onClick={() => generateRIBPDF(currentAccount)}
+                    style={{
+                      ...buttonStyle(theme),
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      marginTop: 0
+                    }}
+                  >
+                    <Download size={18} />
+                    Télécharger PDF
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1443,6 +1931,32 @@ const EliteBanking = () => {
               <div>
                 <h3 style={{ marginTop: 0 }}>Paramètres</h3>
                 
+                <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: `1px solid ${theme.cardBg}` }}>
+                  <button
+                    onClick={() => {
+                      setShowModal('createAccount');
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '16px',
+                      background: theme.accent + '22',
+                      border: `2px solid ${theme.accent}`,
+                      borderRadius: '12px',
+                      color: theme.text,
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Plus size={20} color={theme.accent} />
+                    Ouvrir un compte
+                  </button>
+                </div>
+
                 <div style={{ marginBottom: '30px' }}>
                   <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>Type de carte</h4>
                   {cards.length > 0 && (
@@ -1646,6 +2160,127 @@ const EliteBanking = () => {
                 </div>
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {showWelcome && (
+        <>
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 400
+          }} />
+          <div style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: theme.bg,
+            borderRadius: '20px',
+            padding: '40px 30px',
+            zIndex: 401,
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '30px'
+            }}>
+              <div style={{
+                width: '80px',
+                height: '80px',
+                margin: '0 auto 20px',
+                borderRadius: '20px',
+                background: theme.cardGradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: `2px solid ${theme.accent}33`
+              }}>
+                <span style={{ fontSize: '36px', fontWeight: '300', color: theme.accent }}>E</span>
+              </div>
+              <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '600', color: theme.text }}>
+                Bienvenue sur Elite Banking
+              </h2>
+              <p style={{ margin: 0, fontSize: '14px', color: theme.textSecondary }}>
+                Pour commencer, veuillez renseigner votre identité
+              </p>
+            </div>
+
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontSize: '13px', 
+                color: theme.textSecondary,
+                fontWeight: '600'
+              }}>
+                Prénom *
+              </label>
+              <input 
+                type="text" 
+                placeholder="Votre prénom" 
+                value={formData.firstName || ''}
+                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                style={{
+                  ...inputStyle(theme),
+                  marginBottom: '20px'
+                }}
+                autoFocus
+              />
+
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontSize: '13px', 
+                color: theme.textSecondary,
+                fontWeight: '600'
+              }}>
+                Nom *
+              </label>
+              <input 
+                type="text" 
+                placeholder="Votre nom" 
+                value={formData.lastName || ''}
+                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                style={{
+                  ...inputStyle(theme),
+                  marginBottom: '30px'
+                }}
+              />
+
+              <button 
+                onClick={() => {
+                  if (formData.firstName && formData.lastName) {
+                    setUserProfile({
+                      firstName: formData.firstName.trim(),
+                      lastName: formData.lastName.trim()
+                    });
+                    setShowWelcome(false);
+                    setFormData({});
+                  }
+                }}
+                disabled={!formData.firstName || !formData.lastName}
+                style={{
+                  ...buttonStyle(theme),
+                  marginTop: 0,
+                  opacity: (!formData.firstName || !formData.lastName) ? 0.5 : 1,
+                  cursor: (!formData.firstName || !formData.lastName) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Continuer
+              </button>
+            </div>
+
+            <p style={{ 
+              margin: '20px 0 0', 
+              fontSize: '11px', 
+              color: theme.textSecondary, 
+              textAlign: 'center',
+              lineHeight: '1.5'
+            }}>
+              Ces informations seront utilisées pour vos relevés bancaires et documents officiels
+            </p>
           </div>
         </>
       )}
