@@ -260,26 +260,24 @@ const LogoSelector = ({ value, onChange, theme, customLogos, onAddCustomLogo, on
 };
 
 const EliteBanking = () => {
-  const [loading, setLoading] = useState(true);
-  const [currentTheme, setCurrentTheme] = useState('classic');
-  const [activeTab, setActiveTab] = useState('home');
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [balanceVisible, setBalanceVisible] = useState(true);
-  const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [showModal, setShowModal] = useState(null);
-  const [accounts, setAccounts] = useState([]);
-  const [cards, setCards] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [formData, setFormData] = useState({});
-  const [flippedCard, setFlippedCard] = useState(null);
-  const [revealedInfo, setRevealedInfo] = useState({});
-  const [recurringTransactions, setRecurringTransactions] = useState([]);
-  const [customLogos, setCustomLogos] = useState([]);
-  const [copiedIban, setCopiedIban] = useState(false);
-  const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [appPhase, setAppPhase] = useState('loading'); // 'loading' | 'welcome' | 'ready'
+const [currentTheme, setCurrentTheme] = useState('classic');
+const [activeTab, setActiveTab] = useState('home');
+const [drawerOpen, setDrawerOpen] = useState(false);
+const [balanceVisible, setBalanceVisible] = useState(true);
+const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
+const [currentCardIndex, setCurrentCardIndex] = useState(0);
+const [showModal, setShowModal] = useState(null);
+const [accounts, setAccounts] = useState([]);
+const [cards, setCards] = useState([]);
+const [transactions, setTransactions] = useState([]);
+const [formData, setFormData] = useState({});
+const [flippedCard, setFlippedCard] = useState(null);
+const [revealedInfo, setRevealedInfo] = useState({});
+const [recurringTransactions, setRecurringTransactions] = useState([]);
+const [customLogos, setCustomLogos] = useState([]);
+const [copiedIban, setCopiedIban] = useState(false);
+const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
 
   const theme = themes[currentTheme];
 
@@ -326,16 +324,11 @@ const EliteBanking = () => {
         // Attendre le temps restant pour effet premium
         await new Promise(resolve => setTimeout(resolve, remainingTime));
         
-        // Marquer les données comme chargées
-        setDataLoaded(true);
-        
-        // Terminer le loading
-        setLoading(false);
-        
-        // Afficher le modal de bienvenue SI nécessaire (APRÈS le loading)
+        // Changer de phase directement (pas de setTimeout !)
         if (needsWelcome) {
-          // Petit délai pour transition smooth
-          setTimeout(() => setShowWelcome(true), 100);
+          setAppPhase('welcome');
+        } else {
+          setAppPhase('ready');
         }
         
       } catch (error) {
@@ -344,17 +337,16 @@ const EliteBanking = () => {
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, 3000 - elapsedTime);
         await new Promise(resolve => setTimeout(resolve, remainingTime));
-        setDataLoaded(true);
-        setLoading(false);
+        setAppPhase('ready'); // Passer direct à ready même en erreur
       }
     };
     
     loadData();
   }, []);
 
-  // Sauvegarde automatique dans localStorage à chaque changement
+ // Sauvegarde automatique dans localStorage à chaque changement
   useEffect(() => {
-    if (!dataLoaded) return; // Ne sauvegarder qu'après le chargement initial
+    if (appPhase === 'loading') return; // Ne sauvegarder qu'après le chargement initial
     
     try {
       localStorage.setItem('elite_banking_accounts', JSON.stringify(accounts));
@@ -367,8 +359,7 @@ const EliteBanking = () => {
     } catch (error) {
       console.error('Error saving data:', error);
     }
-  }, [accounts, cards, transactions, recurringTransactions, currentTheme, customLogos, userProfile, dataLoaded]);
-
+}, [accounts, cards, transactions, recurringTransactions, currentTheme, customLogos, userProfile, appPhase]);
   useEffect(() => {
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
@@ -383,7 +374,7 @@ const EliteBanking = () => {
 
   // Migration automatique des anciens comptes sans RIB complet
   useEffect(() => {
-    if (!dataLoaded || accounts.length === 0) return;
+    if (appPhase === 'loading' || accounts.length === 0) return;
     
     let needsUpdate = false;
     const updatedAccounts = accounts.map(account => {
@@ -403,11 +394,11 @@ const EliteBanking = () => {
       setAccounts(updatedAccounts);
       console.log('✅ Migration automatique : RIB complets générés pour les anciens comptes');
     }
-  }, [dataLoaded]);
-
+}, [appPhase]);
+  
   // Exécution automatique des transactions récurrentes
   useEffect(() => {
-    if (!dataLoaded || recurringTransactions.length === 0) return;
+    if (appPhase === 'loading' || recurringTransactions.length === 0) return;
     
     const executeRecurringTransactions = () => {
       const today = new Date();
@@ -485,7 +476,7 @@ const EliteBanking = () => {
     };
     
     executeRecurringTransactions();
-  }, [dataLoaded, recurringTransactions]);
+  }, [appPhase, recurringTransactions]);
   
   const generateCardNumber = () => {
     const segments = [];
@@ -909,7 +900,7 @@ const EliteBanking = () => {
     printWindow.document.close();
   };
 
-  if (loading) {
+  if (appPhase === 'loading') {
     return (
       <div style={{
         backgroundColor: theme.bg,
@@ -941,7 +932,7 @@ const EliteBanking = () => {
   }
 
   // Si le modal de bienvenue doit s'afficher, afficher SEULEMENT lui (pas l'app derrière)
-  if (showWelcome) {
+  if (appPhase === 'welcome') {
     return (
       <div style={{
         backgroundColor: theme.bg,
@@ -1036,7 +1027,7 @@ const EliteBanking = () => {
                     firstName: formData.firstName.trim(),
                     lastName: formData.lastName.trim()
                   });
-                  setShowWelcome(false);
+                  setAppPhase('ready');
                   setFormData({});
                 }
               }}
@@ -1061,7 +1052,7 @@ const EliteBanking = () => {
                     firstName: formData.firstName.trim(),
                     lastName: formData.lastName.trim()
                   });
-                  setShowWelcome(false);
+                  setAppPhase('ready');
                   setFormData({});
                 }
               }}
