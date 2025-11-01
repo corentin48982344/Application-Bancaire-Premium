@@ -284,7 +284,20 @@ const EliteBanking = () => {
 
   // Chargement initial des données depuis localStorage
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2500);
+    const timer = setTimeout(() => {
+      setLoading(false);
+      
+      // Vérifier si on doit afficher le modal de bienvenue
+      const savedUserProfile = localStorage.getItem('elite_banking_user_profile');
+      if (!savedUserProfile) {
+        setTimeout(() => setShowWelcome(true), 500);
+      } else {
+        const profile = JSON.parse(savedUserProfile);
+        if (!profile.firstName || !profile.lastName) {
+          setTimeout(() => setShowWelcome(true), 500);
+        }
+      }
+    }, 2500);
     
     try {
       const savedAccounts = localStorage.getItem('elite_banking_accounts');
@@ -303,9 +316,6 @@ const EliteBanking = () => {
       if (savedCustomLogos) setCustomLogos(JSON.parse(savedCustomLogos));
       if (savedUserProfile) {
         setUserProfile(JSON.parse(savedUserProfile));
-      } else {
-        // Première utilisation - afficher le modal de bienvenue
-        setTimeout(() => setShowWelcome(true), 3000);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -342,6 +352,30 @@ const EliteBanking = () => {
     document.body.style.backgroundColor = theme.bg;
     document.documentElement.style.backgroundColor = theme.bg;
   }, [theme.bg]);
+
+  // Migration automatique des anciens comptes sans RIB complet
+  useEffect(() => {
+    if (loading || accounts.length === 0) return;
+    
+    let needsUpdate = false;
+    const updatedAccounts = accounts.map(account => {
+      // Vérifier si le compte a un RIB complet
+      if (!account.rib || !account.rib.codeBank || !account.rib.codeGuichet) {
+        needsUpdate = true;
+        const ribData = generateRIB();
+        return {
+          ...account,
+          rib: ribData
+        };
+      }
+      return account;
+    });
+    
+    if (needsUpdate) {
+      setAccounts(updatedAccounts);
+      console.log('Migration automatique : RIB complets générés pour les anciens comptes');
+    }
+  }, [loading, accounts.length]);
 
   // Exécution automatique des transactions récurrentes
   useEffect(() => {
@@ -1262,7 +1296,7 @@ const EliteBanking = () => {
               </div>
             ) : (
               <div style={{ background: theme.cardBg, borderRadius: '20px', padding: '40px', textAlign: 'center', marginBottom: '30px' }}>
-                <p style={{ color: theme.textSecondary, marginBottom: '20px' }}>Bienvenue chez Elite Banking</p>
+                <p style={{ color: theme.textSecondary, marginBottom: '20px' }}>Bienvenue sur Elite Banking</p>
                 <button onClick={() => setShowModal('createAccount')}
                   style={{
                     background: theme.accent, color: currentTheme === 'light' ? theme.bg : theme.text,
@@ -2167,7 +2201,7 @@ const EliteBanking = () => {
       {showWelcome && (
         <>
           <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 400
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(8px)', zIndex: 400
           }} />
           <div style={{
             position: 'fixed',
@@ -2202,7 +2236,7 @@ const EliteBanking = () => {
               <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '600', color: theme.text }}>
                 Bienvenue sur Elite Banking
               </h2>
-              <p style={{ margin: 0, fontSize: '14px', color: theme.textSecondary }}>
+              <p style={{ margin: 0, fontSize: '14px', color: theme.textSecondary, lineHeight: '1.5' }}>
                 Pour commencer, veuillez renseigner votre identité
               </p>
             </div>
@@ -2243,6 +2277,16 @@ const EliteBanking = () => {
                 placeholder="Votre nom" 
                 value={formData.lastName || ''}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && formData.firstName && formData.lastName) {
+                    setUserProfile({
+                      firstName: formData.firstName.trim(),
+                      lastName: formData.lastName.trim()
+                    });
+                    setShowWelcome(false);
+                    setFormData({});
+                  }
+                }}
                 style={{
                   ...inputStyle(theme),
                   marginBottom: '30px'
