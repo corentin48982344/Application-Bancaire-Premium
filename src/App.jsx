@@ -936,7 +936,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
     return (
     <div style={{
         backgroundColor: theme.bg,
-        height: '10vh',
+        height: '90vh',
         position: 'fixed',
         display: 'flex',
         alignItems: 'center',
