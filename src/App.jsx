@@ -279,67 +279,95 @@ const EliteBanking = () => {
   const [copiedIban, setCopiedIban] = useState(false);
   const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
   const [showWelcome, setShowWelcome] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const theme = themes[currentTheme];
 
-  // Chargement initial des données depuis localStorage
+  // Chargement RÉEL des données avec minimum 3 secondes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
+    const loadData = async () => {
+      const startTime = Date.now();
       
-      // Vérifier si on doit afficher le modal de bienvenue
-      const savedUserProfile = localStorage.getItem('elite_banking_user_profile');
-      if (!savedUserProfile) {
-        setTimeout(() => setShowWelcome(true), 500);
-      } else {
-        const profile = JSON.parse(savedUserProfile);
-        if (!profile.firstName || !profile.lastName) {
-          setTimeout(() => setShowWelcome(true), 500);
+      try {
+        // Charger TOUTES les données depuis localStorage
+        const savedAccounts = localStorage.getItem('elite_banking_accounts');
+        const savedCards = localStorage.getItem('elite_banking_cards');
+        const savedTransactions = localStorage.getItem('elite_banking_transactions');
+        const savedTheme = localStorage.getItem('elite_banking_theme');
+        const savedRecurring = localStorage.getItem('elite_banking_recurring');
+        const savedCustomLogos = localStorage.getItem('elite_banking_custom_logos');
+        const savedUserProfile = localStorage.getItem('elite_banking_user_profile');
+        
+        // Parser les données (le vrai travail)
+        if (savedAccounts) setAccounts(JSON.parse(savedAccounts));
+        if (savedCards) setCards(JSON.parse(savedCards));
+        if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
+        if (savedTheme) setCurrentTheme(savedTheme);
+        if (savedRecurring) setRecurringTransactions(JSON.parse(savedRecurring));
+        if (savedCustomLogos) setCustomLogos(JSON.parse(savedCustomLogos));
+        
+        // Vérifier le profil utilisateur
+        let needsWelcome = false;
+        if (savedUserProfile) {
+          const profile = JSON.parse(savedUserProfile);
+          setUserProfile(profile);
+          // Vérifier si le profil est complet
+          if (!profile.firstName || !profile.lastName) {
+            needsWelcome = true;
+          }
+        } else {
+          needsWelcome = true;
         }
+        
+        // Calculer le temps écoulé
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, 3000 - elapsedTime); // Minimum 3 secondes
+        
+        // Attendre le temps restant pour effet premium
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        
+        // Marquer les données comme chargées
+        setDataLoaded(true);
+        
+        // Terminer le loading
+        setLoading(false);
+        
+        // Afficher le modal de bienvenue SI nécessaire (APRÈS le loading)
+        if (needsWelcome) {
+          // Petit délai pour transition smooth
+          setTimeout(() => setShowWelcome(true), 100);
+        }
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        // Même en cas d'erreur, attendre 3 secondes minimum
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, 3000 - elapsedTime);
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        setDataLoaded(true);
+        setLoading(false);
       }
-    }, 2500);
+    };
     
-    try {
-      const savedAccounts = localStorage.getItem('elite_banking_accounts');
-      const savedCards = localStorage.getItem('elite_banking_cards');
-      const savedTransactions = localStorage.getItem('elite_banking_transactions');
-      const savedTheme = localStorage.getItem('elite_banking_theme');
-      const savedRecurring = localStorage.getItem('elite_banking_recurring');
-      const savedCustomLogos = localStorage.getItem('elite_banking_custom_logos');
-      const savedUserProfile = localStorage.getItem('elite_banking_user_profile');
-      
-      if (savedAccounts) setAccounts(JSON.parse(savedAccounts));
-      if (savedCards) setCards(JSON.parse(savedCards));
-      if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
-      if (savedTheme) setCurrentTheme(savedTheme);
-      if (savedRecurring) setRecurringTransactions(JSON.parse(savedRecurring));
-      if (savedCustomLogos) setCustomLogos(JSON.parse(savedCustomLogos));
-      if (savedUserProfile) {
-        setUserProfile(JSON.parse(savedUserProfile));
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-    }
-    
-    return () => clearTimeout(timer);
+    loadData();
   }, []);
 
   // Sauvegarde automatique dans localStorage à chaque changement
   useEffect(() => {
-    if (!loading) {
-      try {
-        localStorage.setItem('elite_banking_accounts', JSON.stringify(accounts));
-        localStorage.setItem('elite_banking_cards', JSON.stringify(cards));
-        localStorage.setItem('elite_banking_transactions', JSON.stringify(transactions));
-        localStorage.setItem('elite_banking_theme', currentTheme);
-        localStorage.setItem('elite_banking_recurring', JSON.stringify(recurringTransactions));
-        localStorage.setItem('elite_banking_custom_logos', JSON.stringify(customLogos));
-        localStorage.setItem('elite_banking_user_profile', JSON.stringify(userProfile));
-      } catch (error) {
-        console.error('Error saving data:', error);
-      }
+    if (!dataLoaded) return; // Ne sauvegarder qu'après le chargement initial
+    
+    try {
+      localStorage.setItem('elite_banking_accounts', JSON.stringify(accounts));
+      localStorage.setItem('elite_banking_cards', JSON.stringify(cards));
+      localStorage.setItem('elite_banking_transactions', JSON.stringify(transactions));
+      localStorage.setItem('elite_banking_theme', currentTheme);
+      localStorage.setItem('elite_banking_recurring', JSON.stringify(recurringTransactions));
+      localStorage.setItem('elite_banking_custom_logos', JSON.stringify(customLogos));
+      localStorage.setItem('elite_banking_user_profile', JSON.stringify(userProfile));
+    } catch (error) {
+      console.error('Error saving data:', error);
     }
-  }, [accounts, cards, transactions, recurringTransactions, currentTheme, customLogos, userProfile, loading]);
+  }, [accounts, cards, transactions, recurringTransactions, currentTheme, customLogos, userProfile, dataLoaded]);
 
   useEffect(() => {
     const metaTheme = document.querySelector('meta[name="theme-color"]');
@@ -355,7 +383,7 @@ const EliteBanking = () => {
 
   // Migration automatique des anciens comptes sans RIB complet
   useEffect(() => {
-    if (loading || accounts.length === 0) return;
+    if (!dataLoaded || accounts.length === 0) return;
     
     let needsUpdate = false;
     const updatedAccounts = accounts.map(account => {
@@ -373,13 +401,13 @@ const EliteBanking = () => {
     
     if (needsUpdate) {
       setAccounts(updatedAccounts);
-      console.log('Migration automatique : RIB complets générés pour les anciens comptes');
+      console.log('✅ Migration automatique : RIB complets générés pour les anciens comptes');
     }
-  }, [loading, accounts.length]);
+  }, [dataLoaded]);
 
   // Exécution automatique des transactions récurrentes
   useEffect(() => {
-    if (loading || recurringTransactions.length === 0) return;
+    if (!dataLoaded || recurringTransactions.length === 0) return;
     
     const executeRecurringTransactions = () => {
       const today = new Date();
@@ -457,7 +485,7 @@ const EliteBanking = () => {
     };
     
     executeRecurringTransactions();
-  }, [loading, recurringTransactions]);
+  }, [dataLoaded, recurringTransactions]);
   
   const generateCardNumber = () => {
     const segments = [];
@@ -908,6 +936,164 @@ const EliteBanking = () => {
         </div>
         <h1 style={{ color: theme.text, fontSize: '32px', fontWeight: '300', letterSpacing: '2px', margin: 0 }}>ELITE</h1>
         <p style={{ color: theme.textSecondary, fontSize: '14px', fontWeight: '400', letterSpacing: '3px', marginTop: '8px' }}>BANKING</p>
+      </div>
+    );
+  }
+
+  // Si le modal de bienvenue doit s'afficher, afficher SEULEMENT lui (pas l'app derrière)
+  if (showWelcome) {
+    return (
+      <div style={{
+        backgroundColor: theme.bg,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        padding: '20px'
+      }}>
+        <div style={{
+          background: theme.bg,
+          borderRadius: '20px',
+          padding: '40px 30px',
+          width: '100%',
+          maxWidth: '400px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          border: `1px solid ${theme.cardBg}`
+        }}>
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '30px'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 20px',
+              borderRadius: '20px',
+              background: theme.cardGradient,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: `2px solid ${theme.accent}33`
+            }}>
+              <span style={{ fontSize: '36px', fontWeight: '300', color: theme.accent }}>E</span>
+            </div>
+            <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '600', color: theme.text }}>
+              Bienvenue sur Elite Banking
+            </h2>
+            <p style={{ margin: 0, fontSize: '14px', color: theme.textSecondary, lineHeight: '1.5' }}>
+              Pour commencer, veuillez renseigner votre identité
+            </p>
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '13px', 
+              color: theme.textSecondary,
+              fontWeight: '600'
+            }}>
+              Prénom *
+            </label>
+            <input 
+              type="text" 
+              placeholder="Votre prénom" 
+              value={formData.firstName || ''}
+              onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+              style={{
+                width: '100%',
+                padding: '15px',
+                marginBottom: '20px',
+                borderRadius: '12px',
+                border: `1px solid ${theme.cardBg}`,
+                background: theme.cardBg,
+                color: theme.text,
+                fontSize: '15px',
+                fontFamily: 'inherit',
+                outline: 'none'
+              }}
+              autoFocus
+            />
+
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '13px', 
+              color: theme.textSecondary,
+              fontWeight: '600'
+            }}>
+              Nom *
+            </label>
+            <input 
+              type="text" 
+              placeholder="Votre nom" 
+              value={formData.lastName || ''}
+              onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && formData.firstName && formData.lastName) {
+                  setUserProfile({
+                    firstName: formData.firstName.trim(),
+                    lastName: formData.lastName.trim()
+                  });
+                  setShowWelcome(false);
+                  setFormData({});
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '15px',
+                marginBottom: '30px',
+                borderRadius: '12px',
+                border: `1px solid ${theme.cardBg}`,
+                background: theme.cardBg,
+                color: theme.text,
+                fontSize: '15px',
+                fontFamily: 'inherit',
+                outline: 'none'
+              }}
+            />
+
+            <button 
+              onClick={() => {
+                if (formData.firstName && formData.lastName) {
+                  setUserProfile({
+                    firstName: formData.firstName.trim(),
+                    lastName: formData.lastName.trim()
+                  });
+                  setShowWelcome(false);
+                  setFormData({});
+                }
+              }}
+              disabled={!formData.firstName || !formData.lastName}
+              style={{
+                width: '100%',
+                padding: '15px',
+                borderRadius: '12px',
+                border: 'none',
+                background: theme.accent,
+                color: theme.bg === '#FFFFFF' ? theme.bg : theme.text,
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: (!formData.firstName || !formData.lastName) ? 'not-allowed' : 'pointer',
+                marginTop: 0,
+                opacity: (!formData.firstName || !formData.lastName) ? 0.5 : 1
+              }}
+            >
+              Continuer
+            </button>
+          </div>
+
+          <p style={{ 
+            margin: '20px 0 0', 
+            fontSize: '11px', 
+            color: theme.textSecondary, 
+            textAlign: 'center',
+            lineHeight: '1.5'
+          }}>
+            Ces informations seront utilisées pour vos relevés bancaires et documents officiels
+          </p>
+        </div>
       </div>
     );
   }
@@ -2194,137 +2380,6 @@ const EliteBanking = () => {
                 </div>
               </div>
             )}
-          </div>
-        </>
-      )}
-
-      {showWelcome && (
-        <>
-          <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(8px)', zIndex: 400
-          }} />
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            background: theme.bg,
-            borderRadius: '20px',
-            padding: '40px 30px',
-            zIndex: 401,
-            width: '90%',
-            maxWidth: '400px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
-          }}>
-            <div style={{
-              textAlign: 'center',
-              marginBottom: '30px'
-            }}>
-              <div style={{
-                width: '80px',
-                height: '80px',
-                margin: '0 auto 20px',
-                borderRadius: '20px',
-                background: theme.cardGradient,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: `2px solid ${theme.accent}33`
-              }}>
-                <span style={{ fontSize: '36px', fontWeight: '300', color: theme.accent }}>E</span>
-              </div>
-              <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '600', color: theme.text }}>
-                Bienvenue sur Elite Banking
-              </h2>
-              <p style={{ margin: 0, fontSize: '14px', color: theme.textSecondary, lineHeight: '1.5' }}>
-                Pour commencer, veuillez renseigner votre identité
-              </p>
-            </div>
-
-            <div>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: '8px', 
-                fontSize: '13px', 
-                color: theme.textSecondary,
-                fontWeight: '600'
-              }}>
-                Prénom *
-              </label>
-              <input 
-                type="text" 
-                placeholder="Votre prénom" 
-                value={formData.firstName || ''}
-                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                style={{
-                  ...inputStyle(theme),
-                  marginBottom: '20px'
-                }}
-                autoFocus
-              />
-
-              <label style={{ 
-                display: 'block', 
-                marginBottom: '8px', 
-                fontSize: '13px', 
-                color: theme.textSecondary,
-                fontWeight: '600'
-              }}>
-                Nom *
-              </label>
-              <input 
-                type="text" 
-                placeholder="Votre nom" 
-                value={formData.lastName || ''}
-                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && formData.firstName && formData.lastName) {
-                    setUserProfile({
-                      firstName: formData.firstName.trim(),
-                      lastName: formData.lastName.trim()
-                    });
-                    setShowWelcome(false);
-                    setFormData({});
-                  }
-                }}
-                style={{
-                  ...inputStyle(theme),
-                  marginBottom: '30px'
-                }}
-              />
-
-              <button 
-                onClick={() => {
-                  if (formData.firstName && formData.lastName) {
-                    setUserProfile({
-                      firstName: formData.firstName.trim(),
-                      lastName: formData.lastName.trim()
-                    });
-                    setShowWelcome(false);
-                    setFormData({});
-                  }
-                }}
-                disabled={!formData.firstName || !formData.lastName}
-                style={{
-                  ...buttonStyle(theme),
-                  marginTop: 0,
-                  opacity: (!formData.firstName || !formData.lastName) ? 0.5 : 1,
-                  cursor: (!formData.firstName || !formData.lastName) ? 'not-allowed' : 'pointer'
-                }}
-              >
-                Continuer
-              </button>
-            </div>
-
-            <p style={{ 
-              margin: '20px 0 0', 
-              fontSize: '11px', 
-              color: theme.textSecondary, 
-              textAlign: 'center',
-              lineHeight: '1.5'
-            }}>
-              Ces informations seront utilisées pour vos relevés bancaires et documents officiels
-            </p>
           </div>
         </>
       )}
