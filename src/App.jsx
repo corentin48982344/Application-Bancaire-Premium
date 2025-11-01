@@ -945,15 +945,16 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         alignItems: 'center',
         justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        padding: '20px',
+        padding: '0 20px'
         overflow: 'hidden'
       }}>
-        <div style={{
+       <div style={{
           background: theme.bg,
           borderRadius: '20px',
           padding: '40px 30px',
-          width: '100%',
+          width: '90%',
           maxWidth: '400px',
+          margin: '0 auto',
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
           border: `1px solid ${theme.cardBg}`
         }}>
