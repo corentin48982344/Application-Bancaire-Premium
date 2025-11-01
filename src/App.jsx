@@ -938,7 +938,6 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         backgroundColor: theme.bg,
         minHeight: '100vh',
         position: 'fixed',
-        top: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
