@@ -948,13 +948,12 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         padding: '0 20px',
         overflow: 'hidden'
       }}>
-       <div style={{
+      <div style={{
           background: theme.bg,
           borderRadius: '20px',
-          padding: '40px 30px',
-          width: '90%',
+          padding: '40px 20px',
+          width: '100%',
           maxWidth: '400px',
-          margin: '0 auto',
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
           border: `1px solid ${theme.cardBg}`
         }}>
