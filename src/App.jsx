@@ -945,7 +945,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         alignItems: 'center',
         justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        padding: '0 20px'
+        padding: '0 20px',
         overflow: 'hidden'
       }}>
        <div style={{
