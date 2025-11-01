@@ -993,7 +993,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
               value={formData.firstName || ''}
               onChange={(e) => setFormData({...formData, firstName: e.target.value})}
               style={{
-                width: '100%',
+                width: '50%',
                 padding: '15px',
                 marginBottom: '20px',
                 borderRadius: '12px',
