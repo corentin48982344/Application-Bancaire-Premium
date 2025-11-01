@@ -934,19 +934,15 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
   // Si le modal de bienvenue doit s'afficher, afficher SEULEMENT lui (pas l'app derrière)
   if (appPhase === 'welcome') {
     return (
-     <div style={{
+    <div style={{
         backgroundColor: theme.bg,
-        height: '100vh',
-        width: '100vw',
+        minHeight: '100vh',
         position: 'fixed',
-        top: 0,
-        left: 0,
         display: 'flex',
-        alignItems: 'flex-end',
+        alignItems: 'center',
         justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        padding: '20px',
-        overflow: 'hidden'
+        padding: '20px'
       }}>
       <div style={{
           background: theme.bg,
