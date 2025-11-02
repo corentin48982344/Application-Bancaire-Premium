@@ -911,6 +911,32 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
       }}>
+        <style>{`
+          @keyframes fadeInScale {
+            0% {
+              opacity: 0;
+              transform: scale(0.8);
+            }
+            100% {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          @keyframes pulse {
+            0%, 100% {
+              transform: scale(1);
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            50% {
+              transform: scale(1.05);
+              box-shadow: 0 25px 80px rgba(212, 175, 55, 0.4);
+            }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}</style>
         <div style={{
           width: '120px',
           height: '120px',
@@ -921,12 +947,30 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
           justifyContent: 'center',
           marginBottom: '30px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          border: `2px solid ${theme.accent}33`
+          border: `2px solid ${theme.accent}33`,
+          animation: 'fadeInScale 0.8s ease-out, pulse 2s ease-in-out infinite 0.8s'
         }}>
           <span style={{ fontSize: '48px', fontWeight: '300', color: theme.accent }}>E</span>
         </div>
-        <h1 style={{ color: theme.text, fontSize: '32px', fontWeight: '300', letterSpacing: '2px', margin: 0 }}>ELITE</h1>
-        <p style={{ color: theme.textSecondary, fontSize: '14px', fontWeight: '400', letterSpacing: '3px', marginTop: '8px' }}>BANKING</p>
+       <h1 style={{ 
+          color: theme.text, 
+          fontSize: '32px', 
+          fontWeight: '300', 
+          letterSpacing: '2px', 
+          margin: 0,
+          animation: 'fadeIn 1s ease-out 0.3s both'
+        }}>
+          ELITE
+        </h1><p style={{ 
+          color: theme.textSecondary, 
+          fontSize: '14px', 
+          fontWeight: '400', 
+          letterSpacing: '3px', 
+          marginTop: '8px',
+          animation: 'fadeIn 1s ease-out 0.5s both'
+        }}>
+          BANKING
+        </p>
       </div>
     );
   }
