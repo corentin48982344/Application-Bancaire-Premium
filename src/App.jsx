@@ -320,6 +320,16 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         // Calculer le temps écoulé
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, 6000 - elapsedTime); // Minimum 3 secondes
+
+        // Vibration haptique synchronisée avec le pulse du logo (à 3.9s)
+        setTimeout(() => {
+          if (navigator.vibrate) {
+            navigator.vibrate(100);
+          }
+        }, 3900);
+        
+        // Attendre le temps restant pour effet premium
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
         
         // Attendre le temps restant pour effet premium
         await new Promise(resolve => setTimeout(resolve, remainingTime));
