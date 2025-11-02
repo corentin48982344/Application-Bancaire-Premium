@@ -321,18 +321,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         const elapsedTime = Date.now() - startTime;
         const remainingTime = Math.max(0, 6000 - elapsedTime); // Minimum 3 secondes
 
-        // Fonction haptique compatible iOS
-        const triggerHaptic = () => {
-          const hapticLabel = document.getElementById('haptic-label');
-          if (hapticLabel) {
-            hapticLabel.click();
-          }
-        };
         
-        // Vibration haptique synchronisée avec le pulse du logo (à 3.9s)
-        setTimeout(() => {
-          triggerHaptic();
-        }, 3900);
         
         // Attendre le temps restant pour effet premium
         await new Promise(resolve => setTimeout(resolve, remainingTime));
@@ -928,28 +917,8 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
       }}>
         }}>
-        {/* Input caché pour le retour haptique iOS */}
-        <input 
-          id="haptic-trigger" 
-          type="checkbox" 
-          switch="true"
-          style={{ 
-            position: 'absolute',
-            opacity: 0,
-            pointerEvents: 'none',
-            left: '-9999px'
-          }} 
-        />
-        <label 
-          htmlFor="haptic-trigger" 
-          id="haptic-label"
-          style={{ 
-            position: 'absolute',
-            opacity: 0,
-            pointerEvents: 'none',
-            left: '-9999px'
+       
           }}
-        />
         <style>{`
         <style>{`
           @keyframes fadeInScale {
