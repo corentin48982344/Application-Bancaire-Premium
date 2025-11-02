@@ -916,10 +916,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         justifyContent: 'center',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
       }}>
-        }}>
-       
-          }}
-        <style>{`
+        
         <style>{`
           @keyframes fadeInScale {
             0% {
