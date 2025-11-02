@@ -904,7 +904,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
     return (
       <div style={{
         backgroundColor: theme.bg,
-        height: '50vh',
+        height: '80vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
