@@ -904,12 +904,17 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
     return (
       <div style={{
         backgroundColor: theme.bg,
-        minHeight: '100vh',
+        height: '100vh',
+        width: '100vw',
+        position: 'fixed',
+        top: 0,
+        left: 0,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        overflow: 'hidden'
       }}>
         <div style={{
           width: '120px',
