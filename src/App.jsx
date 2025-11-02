@@ -319,7 +319,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         
         // Calculer le temps écoulé
         const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, 3000 - elapsedTime); // Minimum 3 secondes
+        const remainingTime = Math.max(0, 6000 - elapsedTime); // Minimum 3 secondes
         
         // Attendre le temps restant pour effet premium
         await new Promise(resolve => setTimeout(resolve, remainingTime));
@@ -335,7 +335,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         console.error('Error loading data:', error);
         // Même en cas d'erreur, attendre 3 secondes minimum
         const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, 3000 - elapsedTime);
+        const remainingTime = Math.max(0, 6000 - elapsedTime);
         await new Promise(resolve => setTimeout(resolve, remainingTime));
         setAppPhase('ready'); // Passer direct à ready même en erreur
       }
@@ -958,8 +958,8 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
           fontWeight: '300', 
           letterSpacing: '2px', 
           margin: 0,
-          animation: 'fadeIn 1s ease-out 0.3s both'
-        }}>
+          animation: 'fadeIn 1.8s ease-out 1.5s both'
+      }}>
           ELITE
         </h1><p style={{ 
           color: theme.textSecondary, 
@@ -967,7 +967,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
           fontWeight: '400', 
           letterSpacing: '3px', 
           marginTop: '8px',
-          animation: 'fadeIn 1s ease-out 0.5s both'
+          animation: 'fadeIn 1.8s ease-out 3.2s both'
         }}>
           BANKING
         </p>
@@ -1010,8 +1010,9 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: `2px solid ${theme.accent}33`
-            }}>
+              border: `2px solid ${theme.accent}33`,
+          animation: 'fadeInScale 1.8s ease-out, pulse 4s ease-in-out 2 1.8s'
+        }}>
               <span style={{ fontSize: '36px', fontWeight: '300', color: theme.accent }}>E</span>
             </div>
             <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '600', color: theme.text }}>
