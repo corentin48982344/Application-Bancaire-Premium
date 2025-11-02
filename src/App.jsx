@@ -948,7 +948,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
           marginBottom: '30px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
           border: `2px solid ${theme.accent}33`,
-          animation: 'fadeInScale 0.8s ease-out, pulse 2s ease-in-out infinite 0.8s'
+          animation: 'fadeInScale 0s ease-out, pulse 4.2s ease-in-out 1.8s'
         }}>
           <span style={{ fontSize: '48px', fontWeight: '300', color: theme.accent }}>E</span>
         </div>
