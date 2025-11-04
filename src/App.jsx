@@ -326,8 +326,6 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         // Attendre le temps restant pour effet premium
         await new Promise(resolve => setTimeout(resolve, remainingTime));
         
-        // Attendre le temps restant pour effet premium
-        await new Promise(resolve => setTimeout(resolve, remainingTime));
         
         // Changer de phase directement (pas de setTimeout !)
         if (needsWelcome) {
