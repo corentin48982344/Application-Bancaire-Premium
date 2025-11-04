@@ -964,7 +964,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
           fontWeight: '300', 
           letterSpacing: '2px', 
           margin: 0,
-          animation: 'fadeIn 1.8s ease-out 1.5s both'
+          animation: 'fadeIn 3s ease-out 1.5s both'
       }}>
           ELITE
         </h1><p style={{ 
