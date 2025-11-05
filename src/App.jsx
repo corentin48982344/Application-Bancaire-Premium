@@ -1631,7 +1631,8 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
       cutoffDate.setDate(cutoffDate.getDate() - period);
 
       const filteredTransactions = transactions.filter(tx => {
-        const matchAccount = formData.statsAccount === 'all' || tx.accountId === parseInt(formData.statsAccount);
+const matchAccount = !formData.statsAccount || formData.statsAccount === 'all' || tx.accountId === parseInt(formData.statsAccount);
+
         const matchDate = new Date(tx.date) >= cutoffDate;
         return matchAccount && matchDate;
       });
