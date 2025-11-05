@@ -1579,10 +1579,532 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
         )}
 
         {activeTab === 'stats' && (
-          <div style={{ textAlign: 'center', padding: '40px', color: theme.textSecondary }}>
-            <p>Module disponible en Phase 5</p>
+  <div>
+    <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '20px' }}>Statistiques</h2>
+    
+    {/* Filtres */}
+    <div style={{ marginBottom: '20px', display: 'flex', gap: '12px', overflowX: 'auto' }}>
+      <select 
+        value={formData.statsAccount || 'all'}
+        onChange={(e) => setFormData({...formData, statsAccount: e.target.value})}
+        style={{
+          padding: '10px 15px',
+          borderRadius: '12px',
+          border: `1px solid ${theme.cardBg}`,
+          background: theme.cardBg,
+          color: theme.text,
+          fontSize: '14px',
+          outline: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        <option value="all">Tous les comptes</option>
+        {accounts.map(acc => (
+          <option key={acc.id} value={acc.id}>{acc.name}</option>
+        ))}
+      </select>
+
+      <select
+        value={formData.statsPeriod || '30'}
+        onChange={(e) => setFormData({...formData, statsPeriod: e.target.value})}
+        style={{
+          padding: '10px 15px',
+          borderRadius: '12px',
+          border: `1px solid ${theme.cardBg}`,
+          background: theme.cardBg,
+          color: theme.text,
+          fontSize: '14px',
+          outline: 'none',
+          cursor: 'pointer'
+        }}
+      >
+        <option value="7">7 derniers jours</option>
+        <option value="30">30 derniers jours</option>
+        <option value="90">3 derniers mois</option>
+        <option value="365">Cette année</option>
+      </select>
+    </div>
+
+    {(() => {
+      const period = parseInt(formData.statsPeriod || '30');
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - period);
+
+      const filteredTransactions = transactions.filter(tx => {
+        const matchAccount = formData.statsAccount === 'all' || tx.accountId === parseInt(formData.statsAccount);
+        const matchDate = new Date(tx.date) >= cutoffDate;
+        return matchAccount && matchDate;
+      });
+
+      const totalRevenue = filteredTransactions.filter(tx => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0);
+      const totalExpenses = Math.abs(filteredTransactions.filter(tx => tx.amount < 0).reduce((sum, tx) => sum + tx.amount, 0));
+      const balance = totalRevenue - totalExpenses;
+
+      const totalPatrimoine = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+
+      return (
+        <>
+          {/* Patrimoine total */}
+          <div style={{
+            background: theme.cardGradient,
+            borderRadius: '16px',
+            padding: '24px',
+            marginBottom: '20px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            border: `1px solid ${theme.accent}33`
+          }}>
+            <p style={{ margin: '0 0 8px', fontSize: '13px', color: theme.textSecondary, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Patrimoine total
+            </p>
+            <h2 style={{ margin: 0, fontSize: '36px', fontWeight: '300', letterSpacing: '-1px' }}>
+              {totalPatrimoine.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+            </h2>
           </div>
-        )}
+
+          {/* Revenus vs Dépenses */}
+          <div style={{
+            background: theme.cardBg,
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: '600' }}>Revenus vs Dépenses</h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <p style={{ margin: '0 0 8px', fontSize: '12px', color: theme.textSecondary }}>Revenus</p>
+                <p style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#4CAF50' }}>
+                  +{totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                </p>
+              </div>
+              <div>
+                <p style={{ margin: '0 0 8px', fontSize: '12px', color: theme.textSecondary }}>Dépenses</p>
+                <p style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#ff4444' }}>
+                  -{totalExpenses.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              borderRadius: '12px',
+              background: balance >= 0 ? '#4CAF5022' : '#ff444422',
+              border: `1px solid ${balance >= 0 ? '#4CAF50' : '#ff4444'}`
+            }}>
+              <p style={{ margin: '0 0 4px', fontSize: '12px', color: theme.textSecondary }}>Balance</p>
+              <p style={{ margin: 0, fontSize: '24px', fontWeight: '600', color: balance >= 0 ? '#4CAF50' : '#ff4444' }}>
+                {balance >= 0 ? '+' : ''}{balance.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+              </p>
+            </div>
+          </div>
+
+          {/* Graphique avec toggle */}
+          <div style={{
+            background: theme.cardBg,
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '20px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Visualisation</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setFormData({...formData, chartType: 'line'})}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: (formData.chartType || 'line') === 'line' ? theme.accent : theme.bg,
+                    color: (formData.chartType || 'line') === 'line' ? (currentTheme === 'light' ? theme.bg : theme.text) : theme.text,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📈 Ligne
+                </button>
+                <button
+                  onClick={() => setFormData({...formData, chartType: 'pie'})}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: formData.chartType === 'pie' ? theme.accent : theme.bg,
+                    color: formData.chartType === 'pie' ? (currentTheme === 'light' ? theme.bg : theme.text) : theme.text,
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🥧 Camembert
+                </button>
+              </div>
+            </div>
+ {(formData.chartType || 'line') === 'line' ? (
+              // Graphique en ligne (évolution du solde)
+              (() => {
+                const days = [];
+                for (let i = period - 1; i >= 0; i--) {
+                  const date = new Date();
+                  date.setDate(date.getDate() - i);
+                  days.push(date);
+                }
+
+                const balanceHistory = days.map(day => {
+                  const dayStart = new Date(day.setHours(0, 0, 0, 0));
+                  const dayEnd = new Date(day.setHours(23, 59, 59, 999));
+                  
+                  const txBeforeDay = filteredTransactions.filter(tx => new Date(tx.date) <= dayEnd);
+                  const balance = txBeforeDay.reduce((sum, tx) => sum + tx.amount, 0);
+                  
+                  return { date: dayStart, balance };
+                });
+
+                const maxBalance = Math.max(...balanceHistory.map(d => d.balance), 0);
+                const minBalance = Math.min(...balanceHistory.map(d => d.balance), 0);
+                const range = maxBalance - minBalance || 1;
+
+                return (
+                  <div>
+                    <div style={{ height: '200px', position: 'relative', marginBottom: '10px' }}>
+                      <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
+                        {/* Grille horizontale */}
+                        {[0, 25, 50, 75, 100].map(percent => (
+                          <line
+                            key={percent}
+                            x1="0"
+                            y1={`${100 - percent}%`}
+                            x2="100%"
+                            y2={`${100 - percent}%`}
+                            stroke={currentTheme === 'light' ? '#E0E0E0' : '#2A2A2A'}
+                            strokeWidth="1"
+                          />
+                        ))}
+                        
+                        {/* Ligne du graphique */}
+                        <polyline
+                          points={balanceHistory.map((d, i) => {
+                            const x = (i / (balanceHistory.length - 1)) * 100;
+                            const y = 100 - ((d.balance - minBalance) / range) * 100;
+                            return `${x}%,${y}%`;
+                          }).join(' ')}
+                          fill="none"
+                          stroke={theme.accent}
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        
+                        {/* Points */}
+                        {balanceHistory.map((d, i) => {
+                          const x = (i / (balanceHistory.length - 1)) * 100;
+                          const y = 100 - ((d.balance - minBalance) / range) * 100;
+                          return (
+                            <circle
+                              key={i}
+                              cx={`${x}%`}
+                              cy={`${y}%`}
+                              r="4"
+                              fill={theme.accent}
+                            />
+                          );
+                        })}
+                      </svg>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: theme.textSecondary }}>
+                      <span>{days[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                      <span>{days[Math.floor(days.length / 2)].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                      <span>{days[days.length - 1].toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              // Graphique camembert (répartition par catégorie)
+              (() => {
+                const expenses = filteredTransactions.filter(tx => tx.amount < 0);
+                const categories = {};
+                
+                expenses.forEach(tx => {
+                  const cat = tx.category || 'Autre';
+                  if (!categories[cat]) {
+                    categories[cat] = { total: 0, logo: tx.logo };
+                  }
+                  categories[cat].total += Math.abs(tx.amount);
+                });
+                
+                const sortedCategories = Object.entries(categories)
+                  .sort((a, b) => b[1].total - a[1].total)
+                  .slice(0, 5);
+                
+                const total = sortedCategories.reduce((sum, [_, data]) => sum + data.total, 0);
+                
+                if (sortedCategories.length === 0) {
+                  return (
+                    <p style={{ textAlign: 'center', color: theme.textSecondary, fontSize: '14px', padding: '40px 0' }}>
+                      Aucune dépense enregistrée
+                    </p>
+                  );
+                }
+
+                const colors = ['#D4AF37', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'];
+                let currentAngle = -90;
+
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                      <svg width="200" height="200" viewBox="0 0 200 200">
+                        {sortedCategories.map(([category, data], index) => {
+                          const percentage = (data.total / total) * 100;
+                          const angle = (percentage / 100) * 360;
+                          const startAngle = currentAngle;
+                          const endAngle = currentAngle + angle;
+                          
+                          const startRad = (startAngle * Math.PI) / 180;
+                          const endRad = (endAngle * Math.PI) / 180;
+                          
+                          const x1 = 100 + 80 * Math.cos(startRad);
+                          const y1 = 100 + 80 * Math.sin(startRad);
+                          const x2 = 100 + 80 * Math.cos(endRad);
+                          const y2 = 100 + 80 * Math.sin(endRad);
+                          
+                          const largeArc = angle > 180 ? 1 : 0;
+                          
+                          const path = `M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                          
+                          currentAngle += angle;
+                          
+                          return (
+                            <path
+                              key={category}
+                              d={path}
+                              fill={colors[index % colors.length]}
+                              opacity="0.8"
+                            />
+                          );
+                        })}
+                        <circle cx="100" cy="100" r="40" fill={theme.bg} />
+                      </svg>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {sortedCategories.map(([category, data], index) => {
+                        const percentage = ((data.total / total) * 100).toFixed(1);
+                        const isCustomLogo = data.logo && data.logo.startsWith('data:image');
+                        
+                        return (
+                          <div key={category} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '4px',
+                              background: colors[index % colors.length]
+                            }} />
+                            <div style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              background: `${theme.accent}22`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '14px',
+                              overflow: 'hidden'
+                            }}>
+                              {isCustomLogo ? (
+                                <img src={data.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                data.logo
+                              )}
+                            </div>
+                            <span style={{ fontSize: '14px', flex: 1 }}>{category}</span>
+                            <span style={{ fontSize: '13px', color: theme.textSecondary }}>{percentage}%</span>
+                            <span style={{ fontSize: '14px', fontWeight: '600' }}>
+                              {data.total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+          </div>
+{/* PARTIE 3 FINALE - À COLLER DIRECTEMENT APRÈS LA PARTIE 2 */}
+
+          {/* Répartition par catégorie */}
+          <div style={{
+            background: theme.cardBg,
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: '600' }}>Top 5 catégories</h3>
+            
+            {(() => {
+              const expenses = filteredTransactions.filter(tx => tx.amount < 0);
+              const categories = {};
+              
+              expenses.forEach(tx => {
+                const cat = tx.category || 'Autre';
+                if (!categories[cat]) {
+                  categories[cat] = { total: 0, logo: tx.logo };
+                }
+                categories[cat].total += Math.abs(tx.amount);
+              });
+              
+              const sortedCategories = Object.entries(categories)
+                .sort((a, b) => b[1].total - a[1].total)
+                .slice(0, 5);
+              
+              const maxAmount = sortedCategories[0]?.[1].total || 1;
+              
+              if (sortedCategories.length === 0) {
+                return (
+                  <p style={{ textAlign: 'center', color: theme.textSecondary, fontSize: '14px' }}>
+                    Aucune dépense enregistrée
+                  </p>
+                );
+              }
+              
+              return sortedCategories.map(([category, data]) => {
+                const percentage = (data.total / maxAmount) * 100;
+                const isCustomLogo = data.logo && data.logo.startsWith('data:image');
+                
+                return (
+                  <div key={category} style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: `${theme.accent}22`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '16px',
+                          overflow: 'hidden'
+                        }}>
+                          {isCustomLogo ? (
+                            <img src={data.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            data.logo
+                          )}
+                        </div>
+                        <span style={{ fontSize: '15px', fontWeight: '500' }}>{category}</span>
+                      </div>
+                      <span style={{ fontSize: '15px', fontWeight: '600' }}>
+                        {data.total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                      </span>
+                    </div>
+                    <div style={{
+                      width: '100%',
+                      height: '8px',
+                      background: currentTheme === 'light' ? '#E0E0E0' : '#2A2A2A',
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${percentage}%`,
+                        height: '100%',
+                        background: theme.accent,
+                        borderRadius: '4px',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          {/* Top 5 des plus grosses dépenses */}
+          <div style={{
+            background: theme.cardBg,
+            borderRadius: '16px',
+            padding: '20px'
+          }}>
+            <h3 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: '600' }}>Top 5 des dépenses</h3>
+            
+            {(() => {
+              const topExpenses = filteredTransactions
+                .filter(tx => tx.amount < 0)
+                .sort((a, b) => a.amount - b.amount)
+                .slice(0, 5);
+              
+              if (topExpenses.length === 0) {
+                return (
+                  <p style={{ textAlign: 'center', color: theme.textSecondary, fontSize: '14px' }}>
+                    Aucune dépense enregistrée
+                  </p>
+                );
+              }
+              
+              return topExpenses.map((tx, index) => {
+                const isCustomLogo = tx.logo && tx.logo.startsWith('data:image');
+                
+                return (
+                  <div key={tx.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '15px',
+                    padding: '12px',
+                    background: currentTheme === 'light' ? '#F0F0F0' : '#0A0A0A',
+                    borderRadius: '12px',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: theme.accent,
+                      color: currentTheme === 'light' ? theme.bg : '#000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}>
+                      {index + 1}
+                    </div>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: `${theme.accent}22`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '20px',
+                      overflow: 'hidden'
+                    }}>
+                      {isCustomLogo ? (
+                        <img src={tx.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        tx.logo
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>{tx.name}</p>
+                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: theme.textSecondary }}>
+                        {new Date(tx.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </p>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#ff4444' }}>
+                      {tx.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    </p>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </>
+      );
+    })()}
+  </div>
+)}
       </div>
 
       <div style={{
