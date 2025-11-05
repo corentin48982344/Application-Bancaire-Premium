@@ -68,6 +68,22 @@ const logoLibrary = {
     emojis: ['✨', '🔄', '⭐', '🎯', '✅', '❤️', '🎉', '🌟', '💫', '🔔', '⚠️', '📌', '🔗', '📍', '🎈']
   }
 };
+// Catégories prédéfinies pour les transactions
+const categories = [
+  { name: 'Alimentation', emoji: '🍔' },
+  { name: 'Restaurant', emoji: '🍕' },
+  { name: 'Transport', emoji: '🚗' },
+  { name: 'Logement', emoji: '🏠' },
+  { name: 'Énergie', emoji: '⚡' },
+  { name: 'Shopping', emoji: '🛒' },
+  { name: 'Santé', emoji: '🏥' },
+  { name: 'Loisirs', emoji: '🎮' },
+  { name: 'Abonnement', emoji: '📱' },
+  { name: 'Salaire', emoji: '💰' },
+  { name: 'Virement', emoji: '🔄' },
+  { name: 'Dépense professionelle', emoji: '🏢' },
+  { name: 'Autre', emoji: '✨' }
+];
 
 // Composant sélecteur de logo avec import personnalisé
 const LogoSelector = ({ value, onChange, theme, customLogos, onAddCustomLogo, onDeleteCustomLogo }) => {
@@ -574,31 +590,7 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
     setFormData({});
   };
   
-  const addTransaction = () => {
-    if (!accounts[currentAccountIndex]) return;
-    const amount = parseFloat(formData.amount) || 0;
-    const finalAmount = formData.type === 'debit' ? -Math.abs(amount) : Math.abs(amount);
-    
-    const newTransaction = {
-      id: Date.now(),
-      accountId: accounts[currentAccountIndex].id,
-      name: formData.name || 'Transaction',
-      category: formData.category || 'Autre',
-      amount: finalAmount,
-      date: new Date().toISOString(),
-      logo: formData.transactionLogo || '💰',
-      type: formData.type || 'debit'
-    };
-
-    setTransactions([newTransaction, ...transactions]);
-    setAccounts(accounts.map(acc => 
-      acc.id === accounts[currentAccountIndex].id 
-        ? { ...acc, balance: acc.balance + finalAmount }
-        : acc
-    ));
-    setShowModal(null);
-    setFormData({});
-  };
+ 
 
   const addRecurringTransaction = () => {
     if (!formData.recurringName || !formData.recurringAccount) return;
@@ -1536,11 +1528,10 @@ const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
 
             {accounts.length > 0 && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '30px' }}>
-                  <QuickAction icon={<ArrowUpRight size={20} />} label="Virement" onClick={() => setShowModal('transfer')} theme={theme} />
-                  <QuickAction icon={<Plus size={20} />} label="Transaction" onClick={() => setShowModal('addTransaction')} theme={theme} />
-                  <QuickAction icon={<CreditCard size={20} />} label="RIB" onClick={() => setShowModal('rib')} theme={theme} />
-                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '30px' }}>
+  <QuickAction icon={<ArrowUpRight size={20} />} label="Virement" onClick={() => setShowModal('transfer')} theme={theme} />
+  <QuickAction icon={<CreditCard size={20} />} label="RIB" onClick={() => setShowModal('rib')} theme={theme} />
+</div>
 
                 {currentAccountTransactions.length > 0 && (
                   <div>
@@ -2470,41 +2461,10 @@ const matchAccount = !formData.statsAccount || formData.statsAccount === 'all' |
               </div>
             )}
 
-            {showModal === 'addTransaction' && (
-              <div>
-                <h3 style={{ marginTop: 0 }}>Nouvelle transaction</h3>
-                <select value={formData.type || 'debit'}
-                  onChange={(e) => setFormData({...formData, type: e.target.value})}
-                  style={inputStyle(theme)}>
-                  <option value="debit">Dépense</option>
-                  <option value="credit">Revenu</option>
-                </select>
-                <input type="text" placeholder="Nom" value={formData.name || ''}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  style={inputStyle(theme)} />
-                <input type="number" placeholder="Montant" value={formData.amount || ''}
-                  onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                  style={inputStyle(theme)} />
-                <input type="text" placeholder="Catégorie" value={formData.category || ''}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  style={inputStyle(theme)} />
-                
-                <LogoSelector 
-                  value={formData.transactionLogo || '💰'} 
-                  onChange={(logo) => setFormData({...formData, transactionLogo: logo})}
-                  theme={theme}
-                  customLogos={customLogos}
-                  onAddCustomLogo={addCustomLogo}
-                  onDeleteCustomLogo={deleteCustomLogo}
-                />
-                
-                <button onClick={addTransaction} style={buttonStyle(theme)}>Ajouter</button>
-              </div>
-            )}
-
+            
             {showModal === 'addRecurring' && (
               <div>
-                <h3 style={{ marginTop: 0 }}>Transaction automatique</h3>
+                <h3 style={{ marginTop: 0 }}>Créer une transaction</h3>
                 
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
                   Nom de l'entreprise
@@ -2543,6 +2503,21 @@ const matchAccount = !formData.statsAccount || formData.statsAccount === 'all' |
                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                   ))}
                 </select>
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
+  Catégorie
+</label>
+<select 
+  value={formData.recurringCategory || 'Automatique'} 
+  onChange={(e) => setFormData({...formData, recurringCategory: e.target.value})}
+  style={inputStyle(theme)}
+>
+  {categories.map(cat => (
+    <option key={cat.name} value={cat.name}>
+      {cat.emoji} {cat.name}
+    </option>
+  ))}
+</select>
 
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: theme.textSecondary }}>
                   Type de montant
@@ -2601,7 +2576,7 @@ const matchAccount = !formData.statsAccount || formData.statsAccount === 'all' |
                   </>
                 )}
 
-                <button onClick={addRecurringTransaction} style={buttonStyle(theme)}>Créer la transaction automatique</button>
+                <button onClick={addRecurringTransaction} style={buttonStyle(theme)}>Créer la transaction</button>
               </div>
             )}
 
@@ -2793,7 +2768,7 @@ const matchAccount = !formData.statsAccount || formData.statsAccount === 'all' |
                     alignItems: 'center',
                     marginBottom: '12px'
                   }}>
-                    <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Transactions automatiques</h4>
+                    <h4 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Transactions</h4>
                     <button
                       onClick={() => setShowModal('addRecurring')}
                       style={{
@@ -2865,7 +2840,7 @@ const matchAccount = !formData.statsAccount || formData.statsAccount === 'all' |
                     </div>
                   ) : (
                     <p style={{ fontSize: '13px', color: theme.textSecondary, fontStyle: 'italic' }}>
-                      Aucune transaction automatique configurée
+                      Aucune transaction configurée
                     </p>
                   )}
                 </div>
